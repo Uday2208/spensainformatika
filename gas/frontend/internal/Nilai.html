@@ -1,0 +1,826 @@
+<!-- 
+    NilaiSiswa.html 
+    Modul Input Nilai Akhir (Fase 6F)
+-->
+<div x-data="nilaiController()" x-init="initData()" class="p-4 sm:p-6 pb-24">
+
+    <!-- Notifikasi -->
+    <template x-if="notif.show">
+        <div :class="notif.type === 'success' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'" class="mb-4 p-3 rounded text-sm border shadow-sm flex items-start gap-2">
+            <svg x-show="notif.type === 'success'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <svg x-show="notif.type === 'error'" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            <span x-html="notif.message" class="mt-0.5"></span>
+        </div>
+    </template>
+
+    <!-- Tabs -->
+    <div class="flex flex-col sm:flex-row justify-between mb-4 border-b border-slate-200">
+        <div class="flex overflow-x-auto">
+            <button @click="tab = 'input'" :class="tab === 'input' ? 'bg-white border-t-2 border-l border-r border-blue-600 text-blue-700 font-bold shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-transparent'" class="px-5 py-3 text-sm transition-colors border-t-2 rounded-t mr-1 whitespace-nowrap">
+                Input Nilai Baru
+            </button>
+            <button @click="tab = 'riwayat'" :class="tab === 'riwayat' ? 'bg-white border-t-2 border-l border-r border-blue-600 text-blue-700 font-bold shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-transparent'" class="px-5 py-3 text-sm transition-colors border-t-2 rounded-t mr-1 whitespace-nowrap">
+                Riwayat & Edit Nilai
+            </button>
+            <button @click="tab = 'rekap'" :class="tab === 'rekap' ? 'bg-white border-t-2 border-l border-r border-blue-600 text-blue-700 font-bold shadow-sm' : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-transparent'" class="px-5 py-3 text-sm transition-colors border-t-2 rounded-t whitespace-nowrap">
+                Rekap Semester
+            </button>
+        </div>
+        <div class="py-2 sm:py-0 flex items-center">
+            <button @click="kkmModalOpen = true" class="btn-compact bg-amber-100 text-amber-700 hover:bg-amber-200 border border-amber-300 shadow-sm flex items-center text-xs px-3 py-1.5 rounded">
+                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <span x-text="`Atur KKM (${kkm})`"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State General -->
+    <div x-show="isFetchingInit" class="py-12 text-center">
+        <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+        <p class="text-sm text-slate-500">Memuat modul nilai...</p>
+    </div>
+
+    <div x-show="!isFetchingInit">
+        
+        <!-- =================== TAB: INPUT NILAI =================== -->
+        <div x-show="tab === 'input'" class="bg-white rounded-b rounded-tr border border-slate-200 shadow-sm p-4">
+            
+            <!-- Controls -->
+            <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-4 pb-4 border-b border-slate-100 gap-4">
+                <div class="flex flex-col md:flex-row items-start md:items-end space-y-3 md:space-y-0 md:space-x-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Materi / Bab</label>
+                        <div class="flex items-center space-x-2">
+                            <input type="text" x-model="inputBab" @input="debouncedFetchRataUjian" list="daftarBabList" required placeholder="Contoh: Bab 1 - Aljabar" class="input-compact bg-slate-50 w-full md:w-48 border border-slate-300 rounded px-3 py-1.5 text-sm" :disabled="isSubmitting">
+                            <button type="button" @click="loadExistingGrades()" class="btn-compact bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs whitespace-nowrap px-3 py-1.5 rounded" title="Muat nilai sebelumnya jika bab sudah ada">Muat Data</button>
+                        </div>
+                        <datalist id="daftarBabList">
+                            <template x-for="b in daftarBab" :key="b">
+                                <option :value="b"></option>
+                            </template>
+                        </datalist>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 mb-1">Pilih Kelas</label>
+                        <select x-model="selectedKelas" @change="fetchSiswa()" class="input-compact bg-slate-50 w-full md:w-32 border border-slate-300 rounded px-3 py-1.5 text-sm cursor-pointer" :disabled="isFetchingData || isSubmitting">
+                            <option value="">-- Pilih --</option>
+                            <template x-for="k in kelasList" :key="k.id">
+                                <option :value="k.id" x-text="k.nama_kelas"></option>
+                            </template>
+                        </select>
+                    </div>
+                    
+                    <!-- Bobot Persentase -->
+                    <div class="flex space-x-2 bg-blue-50 p-1.5 rounded border border-blue-100">
+                        <div class="flex flex-col items-center">
+                            <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan Penilaian Harian">
+                                <input type="checkbox" x-model="config.useHarian" @change="if(!config.useHarian) config.pHarian = 0" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <span class="text-[10px] font-bold text-blue-800">Harian (%)</span>
+                            </label>
+                            <input type="number" x-model.number="config.pHarian" min="0" max="100" x-show="config.useHarian" class="input-compact w-16 text-center text-xs border border-blue-200 rounded px-1 py-0.5">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Tugas">
+                                <input type="checkbox" x-model="config.useTugas" @change="if(!config.useTugas) { config.pTugas = 0; resetField('tugas'); }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <span class="text-[10px] font-bold text-blue-800">Tugas (%)</span>
+                            </label>
+                            <input type="number" x-model.number="config.pTugas" min="0" max="100" x-show="config.useTugas" class="input-compact w-16 text-center text-xs border border-blue-200 rounded px-1 py-0.5">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Quiz">
+                                <input type="checkbox" x-model="config.useQuiz" @change="if(!config.useQuiz) { config.pQuiz = 0; resetField('quiz'); }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <span class="text-[10px] font-bold text-blue-800">Quiz (%)</span>
+                            </label>
+                            <input type="number" x-model.number="config.pQuiz" min="0" max="100" x-show="config.useQuiz" class="input-compact w-16 text-center text-xs border border-blue-200 rounded px-1 py-0.5">
+                        </div>
+                        <div class="flex flex-col items-center">
+                            <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Proyek">
+                                <input type="checkbox" x-model="config.useProyek" @change="if(!config.useProyek) { config.pProyek = 0; resetField('proyek'); }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <span class="text-[10px] font-bold text-blue-800">Proyek (%)</span>
+                            </label>
+                            <input type="number" x-model.number="config.pProyek" min="0" max="100" x-show="config.useProyek" class="input-compact w-16 text-center text-xs border border-blue-200 rounded px-1 py-0.5">
+                        </div>
+                        <div class="flex flex-col items-center bg-amber-100/60 p-1 rounded border border-amber-200" x-show="config.sertakanUlangan">
+                            <label class="flex items-center gap-1 cursor-pointer mb-1" title="Bobot Persentase Nilai Ulangan">
+                                <span class="text-[10px] font-black text-amber-900">Ulangan (%)</span>
+                            </label>
+                            <input type="number" x-model.number="config.pUlangan" min="0" max="100" class="input-compact w-16 text-center text-xs font-bold text-amber-900 bg-white border border-amber-300 rounded px-1 py-0.5">
+                        </div>
+                    </div>
+
+                    <!-- Ulangan Trigger -->
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center bg-blue-50 px-3 py-1.5 rounded border border-blue-100 self-center">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" x-model="config.sertakanUlangan" @change="if(config.sertakanUlangan) fetchRataUjian()" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                                <span class="text-xs font-bold text-blue-800">Ulangan</span>
+                            </label>
+                        </div>
+                        <button type="button" @click="config.sertakanUlangan = true; fetchRataUjian()" class="btn-compact bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs whitespace-nowrap shadow-sm flex items-center gap-1 border border-amber-600 self-center py-1.5 px-3 rounded cursor-pointer" :disabled="isFetchingUjian">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                            <span x-text="isFetchingUjian ? 'Menarik...' : 'Tarik Nilai'"></span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Formula Info -->
+            <div class="mb-3 text-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-2" :class="totalBobot === 100 ? 'text-slate-500' : 'text-red-600 font-bold'">
+                <span class="italic">* Rumus: 
+                    <span x-show="!config.sertakanUlangan">(Harian × <span x-text="config.pHarian"></span>%) + (Tugas × <span x-text="config.pTugas"></span>%) + (Quiz × <span x-text="config.pQuiz"></span>%) + (Proyek × <span x-text="config.pProyek"></span>%)</span>
+                    <span x-show="config.sertakanUlangan">(Harian × <span x-text="config.pHarian"></span>%) + (Tugas × <span x-text="config.pTugas"></span>%) + (Quiz × <span x-text="config.pQuiz"></span>%) + (Proyek × <span x-text="config.pProyek"></span>%) + (Ulangan × <span x-text="config.pUlangan"></span>%)</span>
+                </span>
+                <span x-show="totalBobot !== 100" class="bg-red-100 px-2 py-1 rounded">Peringatan: Total persentase saat ini <span x-text="totalBobot"></span>% (Harus 100%)</span>
+            </div>
+
+            <div x-show="isFetchingData" class="py-8 text-center border border-dashed rounded text-slate-500">
+                Memuat data siswa...
+            </div>
+
+            <!-- Table -->
+            <div x-show="!isFetchingData" class="overflow-x-auto">
+                <table class="w-full text-left border-collapse table-compact text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200">
+                            <th class="w-10 text-center py-2">No</th>
+                            <th class="py-2">NIS</th>
+                            <th class="py-2">Nama Siswa</th>
+                            <th class="w-24 text-center bg-blue-50/50 text-blue-900 font-bold" x-show="config.useHarian">Harian</th>
+                            <th class="w-24 text-center" x-show="config.useTugas">Tugas</th>
+                            <th class="w-24 text-center" x-show="config.useQuiz">Quiz</th>
+                            <th class="w-24 text-center" x-show="config.useProyek">Proyek</th>
+                            <th class="w-24 text-center bg-amber-50 text-amber-800" x-show="config.sertakanUlangan">Ulangan</th>
+                            <th class="w-24 text-center bg-blue-50">Nilai Akhir</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="(siswa, index) in siswas" :key="siswa.id">
+                            <tr class="hover:bg-slate-50">
+                                <td class="text-center text-slate-500 py-2" x-text="index + 1"></td>
+                                <td class="font-mono text-slate-600 py-2" x-text="siswa.nis"></td>
+                                <td class="font-medium text-slate-800 py-2" x-text="siswa.user.name || '-'"></td>
+                                
+                                <td class="p-1" x-show="config.useHarian">
+                                    <input type="number" x-model.number="nilaiData[siswa.id].harian" min="0" max="100" class="input-compact w-full text-center bg-blue-50/40 font-bold text-blue-900 border border-blue-200 rounded px-2 py-1">
+                                </td>
+                                <td class="p-1" x-show="config.useTugas">
+                                    <input type="number" x-model.number="nilaiData[siswa.id].tugas" min="0" max="100" class="input-compact w-full text-center bg-white border border-slate-300 rounded px-2 py-1">
+                                </td>
+                                <td class="p-1" x-show="config.useQuiz">
+                                    <input type="number" x-model.number="nilaiData[siswa.id].quiz" min="0" max="100" class="input-compact w-full text-center bg-white border border-slate-300 rounded px-2 py-1">
+                                </td>
+                                <td class="p-1" x-show="config.useProyek">
+                                    <input type="number" x-model.number="nilaiData[siswa.id].proyek" min="0" max="100" class="input-compact w-full text-center bg-white border border-slate-300 rounded px-2 py-1">
+                                </td>
+                                <td class="p-1 bg-amber-50/50 text-center font-bold text-amber-900" x-show="config.sertakanUlangan">
+                                    <span class="inline-block py-1 px-2.5 rounded font-mono font-black text-xs shadow-sm" :class="parseFloat(nilaiData[siswa.id].ulangan || 0) > 0 ? 'bg-green-100 border border-green-400 text-green-900' : 'bg-slate-100 border border-slate-300 text-slate-500'" x-text="parseFloat(nilaiData[siswa.id].ulangan || 0).toFixed(1)"></span>
+                                </td>
+                                <td class="p-1" :class="calculateNilaiAkhir(siswa.id) < kkm ? 'bg-red-50/50' : 'bg-blue-50/50'">
+                                    <div class="w-full text-center font-bold py-1" :class="calculateNilaiAkhir(siswa.id) < kkm ? 'text-red-600' : 'text-blue-700'" x-text="calculateNilaiAkhir(siswa.id).toFixed(1)"></div>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="siswas.length === 0">
+                            <td colspan="9" class="text-center py-6 text-slate-500 italic" x-text="selectedKelas ? 'Belum ada data siswa di kelas ini.' : 'Silakan pilih kelas terlebih dahulu untuk menampilkan data nilai.'"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Submit -->
+            <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg">
+                <div class="text-xs text-slate-600">
+                    <span class="font-bold text-slate-800">📌 Catatan:</span> Pastikan total persentase bobot adalah <strong class="text-blue-700 font-bold">100%</strong> dan Bab telah diisi.
+                </div>
+                <button @click="submitNilai" :disabled="totalBobot !== 100 || !inputBab || isSubmitting || siswas.length === 0" :class="totalBobot !== 100 || !inputBab || siswas.length === 0 ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md cursor-pointer'" class="px-6 py-2 rounded-lg border text-sm flex items-center justify-center gap-2 transition-all w-full md:w-auto">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Nilai Akhir'"></span>
+                </button>
+            </div>
+        </div>
+
+        <!-- =================== TAB: RIWAYAT =================== -->
+        <div x-show="tab === 'riwayat'" class="bg-white rounded-b rounded-tr border border-slate-200 shadow-sm p-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 border-b border-slate-100 pb-4">
+                <h3 class="font-bold text-slate-700 text-sm">Semua Riwayat Nilai</h3>
+                
+                <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3 w-full md:w-auto">
+                    <select x-model="filterRiwayat.bab" class="input-compact bg-slate-50 w-full sm:w-48 border border-slate-300 rounded px-3 py-1.5 text-sm font-semibold cursor-pointer">
+                        <option value="">Semua Materi / Bab</option>
+                        <template x-for="b in daftarBab" :key="b">
+                            <option :value="b" x-text="b"></option>
+                        </template>
+                    </select>
+                    
+                    <select x-model="filterRiwayat.kelas_id" class="input-compact bg-slate-50 w-full sm:w-32 border border-slate-300 rounded px-3 py-1.5 text-sm font-semibold cursor-pointer">
+                        <option value="">Semua Kelas</option>
+                        <template x-for="k in kelasList" :key="k.id">
+                            <option :value="k.id" x-text="k.nama_kelas"></option>
+                        </template>
+                    </select>
+
+                    <button @click="deleteNilaiByBab" :disabled="!filterRiwayat.bab || isSubmitting" class="btn-compact bg-red-100 text-red-600 hover:bg-red-200 border border-red-200 shadow-sm flex items-center justify-center text-xs px-3 py-1.5 rounded whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        Hapus Semua Nilai Bab Ini
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto" x-show="filteredRiwayat.length > 0">
+                <table class="w-full text-left border-collapse table-compact text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="w-10 text-center py-2">No</th>
+                            <th class="py-2">Siswa</th>
+                            <th class="py-2">Kelas</th>
+                            <th class="py-2">Bab / Materi</th>
+                            <th class="text-center">Tugas</th>
+                            <th class="text-center">Quiz</th>
+                            <th class="text-center">Proyek</th>
+                            <th class="text-center">Ulangan</th>
+                            <th class="text-center bg-blue-50 text-blue-900">N.A.</th>
+                            <th class="text-center w-24">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="(rn, index) in filteredRiwayat" :key="rn.id">
+                            <tr class="hover:bg-slate-50">
+                                <td class="text-center text-slate-500 py-2" x-text="index + 1"></td>
+                                <td class="font-medium text-slate-800 py-2" x-text="rn.siswa.user.name || '-'"></td>
+                                <td class="text-slate-600 py-2" x-text="rn.siswa.kelas.nama_kelas || '-'"></td>
+                                <td class="font-bold text-slate-700 py-2" x-text="rn.bab"></td>
+                                <td class="text-center" :class="parseFloat(rn.tugas) < kkm ? 'text-red-600 font-bold' : ''" x-text="rn.tugas"></td>
+                                <td class="text-center" :class="parseFloat(rn.quiz) < kkm ? 'text-red-600 font-bold' : ''" x-text="rn.quiz"></td>
+                                <td class="text-center" :class="parseFloat(rn.proyek) < kkm ? 'text-red-600 font-bold' : ''" x-text="rn.proyek"></td>
+                                <td class="text-center" :class="parseFloat(rn.ulangan) < kkm ? 'text-red-600 font-bold' : ''" x-text="rn.ulangan"></td>
+                                <td class="text-center font-bold" :class="parseFloat(rn.nilai_akhir) < kkm ? 'text-red-700 bg-red-50' : 'text-slate-800 bg-slate-50/50'" x-text="rn.nilai_akhir"></td>
+                                <td class="text-center py-2">
+                                    <div class="flex items-center justify-center space-x-1">
+                                        <button @click="openEditModal(rn)" class="text-amber-500 hover:text-amber-700 hover:bg-amber-50 p-1.5 rounded" title="Ubah">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </button>
+                                        <button @click="deleteNilai(rn.id)" class="text-red-500 hover:text-red-700 hover:bg-red-50 p-1.5 rounded" title="Hapus">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div x-show="filteredRiwayat.length === 0" class="border border-dashed border-slate-300 p-8 rounded text-center text-slate-500 text-sm mt-4">
+                Tidak ada riwayat nilai yang sesuai filter.
+            </div>
+        </div>
+
+        <!-- =================== TAB: REKAP =================== -->
+        <div x-show="tab === 'rekap'" class="bg-white rounded-b rounded-tr border border-slate-200 shadow-sm p-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-3 border-b border-slate-100 pb-4">
+                <div>
+                    <h3 class="font-bold text-slate-700 text-sm">Rekapitulasi Nilai Akhir Semester</h3>
+                    <p class="text-xs text-slate-500 mt-1">Rata-rata dari seluruh materi/bab yang telah dinilai.</p>
+                </div>
+                
+                <div class="w-full md:w-auto flex space-x-2">
+                    <select x-model="filterRekapKelas" class="input-compact bg-slate-50 w-full md:w-48 border border-slate-300 rounded px-3 py-1.5 text-sm cursor-pointer">
+                        <option value="">Semua Kelas</option>
+                        <template x-for="k in kelasList" :key="k.id">
+                            <option :value="k.id" x-text="k.nama_kelas"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse table-compact text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-200 bg-slate-50">
+                            <th class="w-10 text-center py-2">No</th>
+                            <th class="py-2">NIS</th>
+                            <th class="py-2">Nama Siswa</th>
+                            <th class="py-2">Kelas</th>
+                            <th class="text-center">Total Bab</th>
+                            <th class="text-center bg-blue-50 w-32 text-blue-900 font-bold">Rata-rata Rapor</th>
+                            <th class="text-center w-24">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <template x-for="(rek, index) in rekapData" :key="rek.siswa_id">
+                            <tr class="hover:bg-slate-50">
+                                <td class="text-center text-slate-500 py-2" x-text="index + 1"></td>
+                                <td class="font-mono text-slate-600 py-2" x-text="rek.nis"></td>
+                                <td class="font-medium text-slate-800 py-2" x-text="rek.nama"></td>
+                                <td class="text-slate-600 py-2" x-text="rek.kelas"></td>
+                                <td class="text-center font-medium" x-text="rek.total_bab"></td>
+                                <td class="text-center font-bold text-lg" :class="rek.total_bab > 0 ? (rek.rata_rata < kkm ? 'text-red-600 bg-red-50/50' : 'text-blue-700 bg-blue-50/50') : 'text-slate-400'">
+                                    <span x-text="rek.total_bab > 0 ? rek.rata_rata.toFixed(1) : '-'"></span>
+                                </td>
+                                <td class="text-center">
+                                    <span x-show="rek.total_bab === 0" class="text-xs text-slate-400 italic">Belum dinilai</span>
+                                    <span x-show="rek.total_bab > 0 && rek.rata_rata >= kkm" class="inline-block px-2 py-1 bg-green-100 text-green-800 text-[10px] font-bold rounded">TUNTAS</span>
+                                    <span x-show="rek.total_bab > 0 && rek.rata_rata < kkm" class="inline-block px-2 py-1 bg-red-100 text-red-800 text-[10px] font-bold rounded">TDK TUNTAS</span>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="rekapData.length === 0">
+                            <td colspan="7" class="text-center py-6 text-slate-500 italic">Tidak ada data.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div x-show="editModalOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded-lg p-6 shadow-xl w-full max-w-md mx-4" @click.away="editModalOpen = false">
+            <div class="flex justify-between items-center mb-4 pb-2 border-b border-slate-100">
+                <h3 class="font-bold text-slate-800 text-lg">✏️ Ubah Nilai Siswa</h3>
+                <button type="button" @click="editModalOpen = false" class="text-slate-400 hover:text-slate-600 font-bold text-xl">&times;</button>
+            </div>
+            
+            <div class="mb-3 bg-blue-50 p-2.5 rounded-md border border-blue-100">
+                <div class="text-xs text-blue-700 font-semibold mb-0.5">Nama Siswa:</div>
+                <div class="text-sm font-bold text-blue-950" x-text="editData.siswa_nama || 'Siswa'"></div>
+            </div>
+
+            <div class="mb-3">
+                <label class="block text-xs font-semibold text-slate-600 mb-1">Materi / Bab</label>
+                <input type="text" x-model="editData.bab" required class="input-compact w-full bg-slate-50 font-semibold text-slate-800 border border-slate-300 rounded px-3 py-2 text-sm" :disabled="isSubmitting">
+            </div>
+
+            <div class="mb-3 flex items-center gap-2 bg-amber-50/80 p-2 rounded border border-amber-200">
+                <label class="flex items-center gap-2 cursor-pointer select-none">
+                    <input type="checkbox" x-model="editData.sertakanUlangan" class="w-4 h-4 text-amber-600 rounded focus:ring-amber-500 cursor-pointer">
+                    <span class="text-xs font-bold text-amber-900">Sertakan Ulangan</span>
+                </label>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-xs font-semibold text-blue-800 mb-1">Harian / Keaktifan</label>
+                    <input type="number" x-model.number="editData.harian" min="0" max="100" class="input-compact w-full bg-blue-50/60 text-center font-bold text-blue-900 border border-blue-200 rounded px-2 py-1">
+                </div>
+                <div class="col-span-2 sm:col-span-1">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nilai Tugas</label>
+                    <input type="number" x-model.number="editData.tugas" min="0" max="100" required class="input-compact w-full bg-white text-center font-bold border border-slate-300 rounded px-2 py-1">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nilai Quiz</label>
+                    <input type="number" x-model.number="editData.quiz" min="0" max="100" required class="input-compact w-full bg-white text-center font-bold border border-slate-300 rounded px-2 py-1">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nilai Proyek</label>
+                    <input type="number" x-model.number="editData.proyek" min="0" max="100" required class="input-compact w-full bg-white text-center font-bold border border-slate-300 rounded px-2 py-1">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-xs font-semibold text-amber-800 mb-1">Nilai Ulangan</label>
+                    <input type="number" x-model.number="editData.ulangan" min="0" max="100" class="input-compact w-full bg-amber-50 text-center font-bold text-amber-900 border border-amber-300 rounded px-2 py-1">
+                </div>
+            </div>
+
+            <div class="mb-4 text-xs text-blue-800 bg-blue-50/80 p-3 rounded-lg border border-blue-100 flex justify-between items-center">
+                <span class="font-semibold" title="Prediksi Nilai Akhir">Prediksi Nilai Akhir Baru:</span>
+                <strong class="text-base text-blue-900 font-black" x-text="calculateEditNilaiAkhir().toFixed(1)">0.0</strong>
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button type="button" @click="editModalOpen = false" class="btn-compact bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded text-sm font-medium" :disabled="isSubmitting">Batal</button>
+                <button type="button" @click="submitEditNilai" :disabled="isSubmitting || calculateTotalBobot() !== 100" class="btn-compact bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-sm px-4 py-2 rounded text-sm disabled:opacity-50">
+                    <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- KKM Modal -->
+    <div x-show="kkmModalOpen" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50 flex items-center justify-center">
+        <div class="bg-white rounded p-6 shadow-xl w-full max-w-sm mx-4" @click.away="kkmModalOpen = false">
+            <h3 class="font-bold text-slate-800 text-lg mb-2">Pengaturan KKM</h3>
+            <p class="text-xs text-slate-500 mb-4">Kriteria Ketuntasan Minimal digunakan untuk menentukan batas lulus nilai siswa pada tabel nilai dan rapor.</p>
+            
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">Batas Nilai KKM</label>
+                <input type="number" x-model.number="tempKkm" min="0" max="100" class="input-compact w-full text-lg p-2 font-bold text-center border border-slate-300 rounded bg-slate-50 focus:ring-blue-500" :disabled="isSubmitting">
+            </div>
+            
+            <div class="flex justify-end gap-2">
+                <button type="button" @click="kkmModalOpen = false" class="btn-compact bg-slate-200 hover:bg-slate-300 text-slate-700 px-4 py-2 rounded text-sm font-medium" :disabled="isSubmitting">Batal</button>
+                <button type="button" @click="submitKkm" class="btn-compact bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 rounded text-sm shadow-sm flex items-center gap-1" :disabled="isSubmitting">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    <span x-text="isSubmitting ? 'Menyimpan...' : 'Terapkan'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function nilaiController() {
+    return {
+        isFetchingInit: true,
+        isFetchingData: false,
+        isFetchingUjian: false,
+        isSubmitting: false,
+        
+        tab: 'input',
+        
+        kelasList: [],
+        daftarBab: [],
+        kkm: 75,
+        
+        // Input Tab Data
+        selectedKelas: '',
+        inputBab: '',
+        siswas: [],
+        nilaiData: {}, // { siswa_id: { harian, tugas, quiz, proyek, ulangan } }
+        
+        // Configuration Checkboxes & Weights
+        config: {
+            useHarian: true, pHarian: 20,
+            useTugas: true, pTugas: 20,
+            useQuiz: true, pQuiz: 20,
+            useProyek: true, pProyek: 20,
+            sertakanUlangan: false, pUlangan: 20
+        },
+        
+        // Riwayat Data
+        semuaRiwayat: [], 
+        
+        filterRiwayat: { bab: '', kelas_id: '' },
+        
+        // Rekap Data
+        filterRekapKelas: '',
+        
+        // Modals
+        editModalOpen: false,
+        editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0, sertakanUlangan: false },
+        
+        kkmModalOpen: false,
+        tempKkm: 75,
+        
+        notif: { show: false, type: '', message: '' },
+        
+        // Helper Getters
+        get totalBobot() {
+            return this.calculateTotalBobot();
+        },
+        
+        get filteredRiwayat() {
+            return this.semuaRiwayat.filter(r => {
+                const matchBab = !this.filterRiwayat.bab || r.bab === this.filterRiwayat.bab;
+                const matchKelas = !this.filterRiwayat.kelas_id || (r.siswa && r.siswa.kelas && r.siswa.kelas.id == this.filterRiwayat.kelas_id);
+                return matchBab && matchKelas;
+            });
+        },
+        
+        get rekapData() {
+            const dataMap = {};
+            
+            this.semuaRiwayat.forEach(r => {
+                const sId = r.siswa_id;
+                if (!dataMap[sId]) {
+                    dataMap[sId] = {
+                        siswa_id: sId,
+                        nis: r.siswa?.nis || '-',
+                        nama: r.siswa?.user?.name || '-',
+                        kelas: r.siswa?.kelas?.nama_kelas || '-',
+                        kelas_id: r.siswa?.kelas?.id || '',
+                        total_bab: 0,
+                        sum_nilai: 0
+                    };
+                }
+                dataMap[sId].total_bab += 1;
+                dataMap[sId].sum_nilai += parseFloat(r.nilai_akhir || 0);
+            });
+            
+            let arr = Object.values(dataMap).map(d => {
+                d.rata_rata = d.sum_nilai / d.total_bab;
+                return d;
+            });
+            
+            if (this.filterRekapKelas) {
+                arr = arr.filter(d => d.kelas_id == this.filterRekapKelas);
+            }
+            
+            arr.sort((a,b) => a.nama.localeCompare(b.nama));
+            return arr;
+        },
+        
+        initData() {
+            this.isFetchingInit = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isFetchingInit = false;
+                    if (response.status === 'success') {
+                        this.kelasList = response.data.kelas || [];
+                        this.daftarBab = response.data.daftar_bab || [];
+                        this.kkm = response.data.kkm || 75;
+                        this.tempKkm = this.kkm;
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isFetchingInit = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .getNilaiInit(localStorage.getItem('spensa_token'));
+        },
+        
+        fetchSiswa() {
+            if (!this.selectedKelas) {
+                this.siswas = [];
+                return;
+            }
+            
+            this.isFetchingData = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isFetchingData = false;
+                    if (response.status === 'success') {
+                        this.siswas = response.data.siswas || [];
+                        
+                        // Initialize nilaiData models
+                        this.siswas.forEach(s => {
+                            this.nilaiData[s.id] = {
+                                harian: parseFloat(s.rata_harian || 80).toFixed(1),
+                                tugas: 0,
+                                quiz: 0,
+                                proyek: 0,
+                                ulangan: 0
+                            };
+                        });
+                        
+                        // Gabungkan ke semuaRiwayat
+                        let newRiwayat = response.data.riwayat_nilai || [];
+                        this.semuaRiwayat = this.semuaRiwayat.filter(r => !(r.siswa && r.siswa.kelas && r.siswa.kelas.id == this.selectedKelas));
+                        this.semuaRiwayat = this.semuaRiwayat.concat(newRiwayat);
+                        
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isFetchingData = false;
+                    this.showNotif('error', 'Gagal memuat data kelas: ' + error.message);
+                })
+                .getNilaiData(localStorage.getItem('spensa_token'), this.selectedKelas);
+        },
+        
+        debouncedFetchRataUjian() {
+            clearTimeout(this._timeoutBab);
+            this._timeoutBab = setTimeout(() => {
+                if (this.config.sertakanUlangan && this.inputBab.trim() !== '') {
+                    this.fetchRataUjian();
+                }
+            }, 700);
+        },
+        
+        fetchRataUjian() {
+            if (!this.inputBab.trim()) return;
+            
+            this.isFetchingUjian = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isFetchingUjian = false;
+                    if (response.status === 'success') {
+                        const dict = response.data;
+                        this.siswas.forEach(s => {
+                            if (dict[s.id] !== undefined) {
+                                this.nilaiData[s.id].ulangan = dict[s.id];
+                            }
+                        });
+                        this.showNotif('success', 'Nilai ulangan berhasil ditarik otomatis.');
+                    }
+                })
+                .withFailureHandler(() => {
+                    this.isFetchingUjian = false;
+                })
+                .getRataUjian(localStorage.getItem('spensa_token'), this.inputBab);
+        },
+        
+        loadExistingGrades() {
+            if (!this.inputBab || !this.selectedKelas) {
+                this.showNotif('error', 'Pilih kelas dan isi Bab terlebih dahulu.');
+                return;
+            }
+            
+            const existing = this.semuaRiwayat.filter(r => r.bab === this.inputBab && r.siswa && r.siswa.kelas.id == this.selectedKelas);
+            if (existing.length === 0) {
+                this.showNotif('error', 'Tidak ada data nilai sebelumnya untuk Bab ini di kelas terpilih.');
+                return;
+            }
+            
+            existing.forEach(rn => {
+                if (this.nilaiData[rn.siswa_id]) {
+                    this.nilaiData[rn.siswa_id].tugas = parseFloat(rn.tugas || 0);
+                    this.nilaiData[rn.siswa_id].quiz = parseFloat(rn.quiz || 0);
+                    this.nilaiData[rn.siswa_id].proyek = parseFloat(rn.proyek || 0);
+                    this.nilaiData[rn.siswa_id].ulangan = parseFloat(rn.ulangan || 0);
+                }
+            });
+            this.showNotif('success', 'Data nilai sebelumnya berhasil dimuat.');
+        },
+        
+        resetField(field) {
+            Object.keys(this.nilaiData).forEach(sid => {
+                this.nilaiData[sid][field] = 0;
+            });
+        },
+        
+        calculateTotalBobot() {
+            let total = 0;
+            if (this.config.useHarian) total += parseFloat(this.config.pHarian || 0);
+            if (this.config.useTugas) total += parseFloat(this.config.pTugas || 0);
+            if (this.config.useQuiz) total += parseFloat(this.config.pQuiz || 0);
+            if (this.config.useProyek) total += parseFloat(this.config.pProyek || 0);
+            if (this.config.sertakanUlangan) total += parseFloat(this.config.pUlangan || 0);
+            return total;
+        },
+        
+        calculateNilaiAkhir(siswaId) {
+            const data = this.nilaiData[siswaId];
+            if (!data) return 0;
+            
+            let akhir = 0;
+            if (this.config.useHarian) akhir += parseFloat(data.harian || 0) * (parseFloat(this.config.pHarian||0) / 100);
+            if (this.config.useTugas) akhir += parseFloat(data.tugas || 0) * (parseFloat(this.config.pTugas||0) / 100);
+            if (this.config.useQuiz) akhir += parseFloat(data.quiz || 0) * (parseFloat(this.config.pQuiz||0) / 100);
+            if (this.config.useProyek) akhir += parseFloat(data.proyek || 0) * (parseFloat(this.config.pProyek||0) / 100);
+            if (this.config.sertakanUlangan) akhir += parseFloat(data.ulangan || 0) * (parseFloat(this.config.pUlangan||0) / 100);
+            
+            return akhir;
+        },
+        
+        submitNilai() {
+            if (this.calculateTotalBobot() !== 100 || !this.inputBab) return;
+            
+            this.isSubmitting = true;
+            
+            const payload = {
+                bab: this.inputBab,
+                p_harian: this.config.useHarian ? this.config.pHarian : 0,
+                p_tugas: this.config.useTugas ? this.config.pTugas : 0,
+                p_quiz: this.config.useQuiz ? this.config.pQuiz : 0,
+                p_proyek: this.config.useProyek ? this.config.pProyek : 0,
+                sertakan_ulangan: this.config.sertakanUlangan,
+                p_ulangan: this.config.sertakanUlangan ? this.config.pUlangan : 0,
+                nilai: this.nilaiData
+            };
+            
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSubmitting = false;
+                    if (response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        if (!this.daftarBab.includes(this.inputBab)) {
+                            this.daftarBab.push(this.inputBab);
+                            this.daftarBab.sort();
+                        }
+                        this.fetchSiswa(); 
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSubmitting = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .storeNilai(localStorage.getItem('spensa_token'), payload);
+        },
+        
+        openEditModal(rn) {
+            this.editData = {
+                id: rn.id,
+                siswa_id: rn.siswa_id,
+                siswa_nama: rn.siswa.user.name || '-',
+                bab: rn.bab,
+                harian: 80, 
+                tugas: parseFloat(rn.tugas || 0),
+                quiz: parseFloat(rn.quiz || 0),
+                proyek: parseFloat(rn.proyek || 0),
+                ulangan: parseFloat(rn.ulangan || 0),
+                sertakanUlangan: (parseFloat(rn.ulangan) > 0)
+            };
+            this.editModalOpen = true;
+        },
+        
+        calculateEditNilaiAkhir() {
+            let akhir = 0;
+            if (this.config.useHarian) akhir += parseFloat(this.editData.harian || 0) * (parseFloat(this.config.pHarian||0) / 100);
+            if (this.config.useTugas) akhir += parseFloat(this.editData.tugas || 0) * (parseFloat(this.config.pTugas||0) / 100);
+            if (this.config.useQuiz) akhir += parseFloat(this.editData.quiz || 0) * (parseFloat(this.config.pQuiz||0) / 100);
+            if (this.config.useProyek) akhir += parseFloat(this.editData.proyek || 0) * (parseFloat(this.config.pProyek||0) / 100);
+            if (this.editData.sertakanUlangan) akhir += parseFloat(this.editData.ulangan || 0) * (parseFloat(this.config.pUlangan||0) / 100);
+            return akhir;
+        },
+        
+        submitEditNilai() {
+            if (this.calculateTotalBobot() !== 100) return;
+            
+            this.isSubmitting = true;
+            const payload = {
+                bab: this.editData.bab,
+                p_harian: this.config.useHarian ? this.config.pHarian : 0,
+                p_tugas: this.config.useTugas ? this.config.pTugas : 0,
+                p_quiz: this.config.useQuiz ? this.config.pQuiz : 0,
+                p_proyek: this.config.useProyek ? this.config.pProyek : 0,
+                sertakan_ulangan: this.editData.sertakanUlangan,
+                p_ulangan: this.editData.sertakanUlangan ? this.config.pUlangan : 0,
+                harian: this.editData.harian,
+                tugas: this.editData.tugas,
+                quiz: this.editData.quiz,
+                proyek: this.editData.proyek,
+                ulangan: this.editData.ulangan
+            };
+            
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSubmitting = false;
+                    if (response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        this.editModalOpen = false;
+                        if (this.selectedKelas) this.fetchSiswa();
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSubmitting = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .updateNilai(localStorage.getItem('spensa_token'), this.editData.id, payload);
+        },
+        
+        deleteNilai(id) {
+            if (!confirm('Yakin ingin menghapus nilai ini?')) return;
+            this.isSubmitting = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSubmitting = false;
+                    if (response.status === 'success') {
+                        this.semuaRiwayat = this.semuaRiwayat.filter(r => r.id != id);
+                        this.showNotif('success', response.message);
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSubmitting = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .destroyNilai(localStorage.getItem('spensa_token'), id);
+        },
+        
+        deleteNilaiByBab() {
+            if (!this.filterRiwayat.bab) return;
+            if (!confirm(`Yakin ingin menghapus SEMUA nilai untuk Bab: ${this.filterRiwayat.bab}?`)) return;
+            
+            this.isSubmitting = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSubmitting = false;
+                    if (response.status === 'success') {
+                        this.semuaRiwayat = this.semuaRiwayat.filter(r => r.bab !== this.filterRiwayat.bab);
+                        this.showNotif('success', response.message);
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSubmitting = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .destroyNilaiByBab(localStorage.getItem('spensa_token'), this.filterRiwayat.bab);
+        },
+        
+        submitKkm() {
+            this.isSubmitting = true;
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSubmitting = false;
+                    if (response.status === 'success') {
+                        this.kkm = this.tempKkm;
+                        this.kkmModalOpen = false;
+                        this.showNotif('success', response.message);
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSubmitting = false;
+                    this.showNotif('error', 'Gagal koneksi: ' + error.message);
+                })
+                .updateKkm(localStorage.getItem('spensa_token'), this.tempKkm);
+        },
+        
+        showNotif(type, message) {
+            this.notif = { show: true, type, message };
+            setTimeout(() => { this.notif.show = false; }, 5000);
+        }
+    }
+}
+</script>

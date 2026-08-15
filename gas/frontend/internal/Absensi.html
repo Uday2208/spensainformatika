@@ -1,0 +1,417 @@
+<!-- 
+    Absensi.html 
+    Migrasi dari resources/views/guru/absensi.blade.php
+-->
+<div x-data="absensiController()" x-init="initData()" class="p-4 sm:p-6 pb-24">
+
+    <!-- BANNER INFO UTAMA -->
+    <div class="flex items-start gap-4 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-5 mb-5 shadow-xl relative overflow-hidden">
+        <div class="absolute inset-0 opacity-10">
+            <div class="absolute top-0 right-0 w-48 h-48 bg-white rounded-full -translate-y-24 translate-x-24"></div>
+        </div>
+        <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg relative">
+            <svg class="w-7 h-7 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+        </div>
+        <div class="relative flex-1 min-w-0">
+            <h2 class="text-white font-bold text-base leading-tight">Halaman Input & Koreksi Presensi</h2>
+            <p class="text-blue-200 text-xs mt-1 leading-relaxed">
+                Halaman ini digunakan untuk <strong class="text-amber-300">mencatat kehadiran siswa</strong> kelas Anda, baik input baru maupun mengedit data absensi hari sebelumnya.
+            </p>
+        </div>
+    </div>
+
+    <!-- Notifikasi -->
+    <template x-if="notif.show">
+        <div :class="notif.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'" class="mb-4 flex items-center gap-3 p-4 rounded-2xl border shadow-sm">
+            <div :class="notif.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg x-show="notif.type === 'success'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <svg x-show="notif.type === 'error'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <p class="font-semibold text-sm" x-html="notif.message"></p>
+        </div>
+    </template>
+
+    <!-- FILTER FORM -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5">
+        <div class="flex items-center gap-2 mb-4">
+            <div class="w-6 h-6 bg-slate-100 rounded-lg flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+            </div>
+            <h3 class="font-bold text-slate-700 text-sm">Filter Tampilan</h3>
+        </div>
+        <form @submit.prevent="fetchAbsensi" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Filter Kelas</label>
+                <select x-model="filter.kelas_id" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all cursor-pointer min-h-[44px]">
+                    <option value="">Semua Kelas</option>
+                    <template x-for="k in kelasList" :key="k.id">
+                        <option :value="k.id" x-text="k.nama_kelas"></option>
+                    </template>
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-slate-500 mb-1.5 uppercase tracking-wide">Tanggal Absensi</label>
+                <input type="date" x-model="filter.tanggal" class="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all min-h-[44px]">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/25 transition-all min-h-[44px]" :disabled="isLoading">
+                    <svg x-show="!isLoading" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <svg x-show="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    Tampilkan
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- STATUS INDICATOR: Sudah / Belum Terisi -->
+    <template x-if="!activeKelasId && !isFetching">
+        <div class="p-8 bg-blue-50 border border-blue-200 rounded-2xl shadow-sm text-center flex flex-col items-center justify-center">
+            <div class="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-blue-800 mb-1">Silakan Pilih Kelas Terlebih Dahulu</h3>
+            <p class="text-xs text-blue-700 max-w-md leading-relaxed">
+                Untuk melakukan pengisian presensi siswa, pilih salah satu kelas pada filter di atas lalu klik tombol <strong>Tampilkan</strong>.
+            </p>
+        </div>
+    </template>
+    
+    <template x-if="isFetching">
+        <div class="p-12 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
+            <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+            <p class="text-sm text-slate-500 font-medium">Memuat data absensi...</p>
+        </div>
+    </template>
+
+    <template x-if="activeKelasId && !isFetching">
+        <div>
+            <!-- Status Indicator -->
+            <template x-if="sudahDiisi">
+                <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-4">
+                    <div class="w-7 h-7 bg-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                    </div>
+                    <div>
+                        <p class="font-bold text-emerald-800 text-sm">Data absensi <span class="font-black" x-text="formatDate(activeTanggal)"></span> sudah ada.</p>
+                        <p class="text-emerald-700 text-xs">Anda bisa mengubah status kehadiran di bawah, lalu klik <strong>Simpan Presensi</strong>.</p>
+                    </div>
+                </div>
+            </template>
+            <template x-if="!sudahDiisi">
+                <div class="flex items-center justify-between gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-7 h-7 bg-amber-400 rounded-full flex items-center justify-center flex-shrink-0">
+                            <svg class="w-4 h-4 text-amber-900" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        </div>
+                        <div>
+                            <p class="font-bold text-amber-800 text-sm">Belum ada data absensi untuk tanggal ini.</p>
+                            <p class="text-amber-700 text-xs">Silakan tentukan status kehadiran siswa kelas Anda di bawah, lalu klik <strong>Simpan Presensi</strong>.</p>
+                        </div>
+                    </div>
+                </div>
+            </template>
+
+            <!-- FORM KOREKSI ABSENSI -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <form @submit.prevent="submitAbsensi">
+                    <!-- Header Tabel -->
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-slate-50">
+                        <div>
+                            <h3 class="font-bold text-slate-700 text-sm">
+                                Daftar Siswa
+                                — <span class="text-blue-600" x-text="getActiveKelasName()"></span>
+                            </h3>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                Tanggal: <strong x-text="formatDate(activeTanggal)"></strong>
+                                · <span x-text="siswas.length"></span> siswa
+                            </p>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <button type="button" @click="setAll('hadir')" class="flex items-center gap-1.5 px-3 py-2 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-all active:scale-95">
+                                ✅ Set Semua Hadir
+                            </button>
+                            <button type="submit" class="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/25 transition-all" :disabled="isSaving">
+                                <svg x-show="!isSaving" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                                <svg x-show="isSaving" class="animate-spin h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                <span x-text="isSaving ? 'Menyimpan...' : 'Simpan Presensi'"></span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Tabel -->
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50 border-b border-slate-100">
+                                    <th class="w-10 text-center px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">No</th>
+                                    <th class="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">NIS</th>
+                                    <th class="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Nama Siswa</th>
+                                    <th class="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide">Kelas</th>
+                                    <th class="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide text-center w-56">Status Kehadiran</th>
+                                    <th class="px-3 py-3 text-xs font-bold text-slate-500 uppercase tracking-wide text-center w-24">Data di DB</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                <template x-for="(siswa, index) in siswas" :key="siswa.id">
+                                    <tr class="hover:bg-slate-50 transition-colors" :class="siswa.adaData ? 'bg-white' : 'bg-slate-50/30'">
+                                        <td class="text-center text-slate-400 text-sm px-3 py-3" x-text="index + 1"></td>
+                                        <td class="font-mono text-slate-600 text-xs px-3 py-3" x-text="siswa.nis"></td>
+                                        <td class="font-semibold text-slate-800 text-sm px-3 py-3" x-text="siswa.nama"></td>
+                                        <td class="text-slate-500 text-xs px-3 py-3" x-text="siswa.kelas_nama"></td>
+                                        <td class="px-3 py-3">
+                                            <select x-model="siswa.status" :class="getColorClass(siswa.status, siswa.adaData)" class="w-full text-sm font-semibold bg-white border-2 rounded-xl px-3 py-2 focus:outline-none transition-all cursor-pointer min-h-[40px]">
+                                                <option value="hadir">✅ Hadir</option>
+                                                <option value="sakit">🤒 Sakit</option>
+                                                <option value="izin">📝 Izin</option>
+                                                <option value="dispen">🎫 Dispen</option>
+                                                <option value="alpha">❌ Alpha</option>
+                                            </select>
+                                        </td>
+                                        <td class="text-center px-3 py-3">
+                                            <template x-if="siswa.adaData">
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold border" :class="getBadgeColor(siswa.status)">
+                                                    ✓ Terisi
+                                                </span>
+                                            </template>
+                                            <template x-if="!siswa.adaData">
+                                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 text-slate-400 rounded-full text-[10px] font-bold border border-slate-200">
+                                                    — Kosong
+                                                </span>
+                                            </template>
+                                        </td>
+                                    </tr>
+                                </template>
+                                <template x-if="siswas.length === 0">
+                                    <tr>
+                                        <td colspan="6" class="text-center py-16 text-slate-400">
+                                            <svg class="w-12 h-12 mx-auto mb-3 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                                            <p class="font-medium">Belum ada data siswa terdaftar di kelas ini.</p>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </form>
+
+                <template x-if="siswas.length > 0">
+                    <!-- Footer Hapus Data -->
+                    <div class="px-5 py-4 border-t border-red-100 bg-red-50/50">
+                        <details class="group">
+                            <summary class="flex items-center gap-2 cursor-pointer text-xs font-bold text-red-500 list-none select-none hover:text-red-700 transition-colors">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                🗑️ Zona Bahaya: Hapus Semua Data Absensi Tanggal Ini
+                                <svg class="w-3 h-3 ml-auto group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                            </summary>
+                            <form @submit.prevent="deleteAbsensiByDate" class="flex flex-col sm:flex-row items-end gap-3 mt-4">
+                                <div class="flex-1 w-full">
+                                    <label class="block text-xs font-semibold text-red-500 mb-1">Filter Kelas yang Dihapus</label>
+                                    <select x-model="deleteFilter.kelas_id_hapus" class="w-full text-sm bg-white border border-red-200 rounded-xl px-3 py-2 focus:outline-none focus:border-red-400 cursor-pointer min-h-[40px]" :disabled="isDeleting">
+                                        <option value="all">Semua Kelas</option>
+                                        <template x-for="k in kelasList" :key="k.id">
+                                            <option :value="k.id" x-text="k.nama_kelas"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                                <button type="submit" class="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2 bg-red-600 hover:bg-red-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-red-500/20 transition-all min-h-[40px]" :disabled="isDeleting">
+                                    <svg x-show="!isDeleting" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                    <svg x-show="isDeleting" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span x-text="isDeleting ? 'Menghapus...' : 'Hapus Data'"></span>
+                                </button>
+                            </form>
+                        </details>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<script>
+function absensiController() {
+    return {
+        isLoading: false,
+        isFetching: false,
+        isSaving: false,
+        isDeleting: false,
+        
+        kelasList: [],
+        siswas: [],
+        sudahDiisi: false,
+        
+        filter: {
+            kelas_id: '',
+            tanggal: new Date().toISOString().split('T')[0]
+        },
+        deleteFilter: {
+            kelas_id_hapus: 'all'
+        },
+        
+        activeKelasId: null,
+        activeTanggal: null,
+        
+        notif: { show: false, type: '', message: '' },
+        
+        showNotif(type, message) {
+            this.notif = { show: true, type, message };
+            setTimeout(() => { this.notif.show = false; }, 5000);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        },
+
+        initData() {
+            google.script.run
+                .withSuccessHandler((response) => {
+                    if (response.status === 'success') {
+                        this.kelasList = response.data.kelas;
+                    } else if (response.status === 'unauthorized') {
+                        window.top.location.href = "<?= scriptUrl ?>?page=login";
+                    }
+                })
+                .getAbsensiInit(localStorage.getItem('spensa_token'));
+        },
+        
+        fetchAbsensi() {
+            if (!this.filter.kelas_id || !this.filter.tanggal) {
+                this.showNotif('error', 'Silakan pilih kelas dan tanggal terlebih dahulu.');
+                return;
+            }
+            
+            this.isFetching = true;
+            this.isLoading = true;
+            
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isFetching = false;
+                    this.isLoading = false;
+                    
+                    if (response.status === 'success') {
+                        this.activeKelasId = this.filter.kelas_id;
+                        this.activeTanggal = this.filter.tanggal;
+                        this.siswas = response.data.siswas;
+                        this.sudahDiisi = response.data.sudahDiisi;
+                        // Pre-fill delete filter
+                        this.deleteFilter.kelas_id_hapus = this.filter.kelas_id;
+                    } else if (response.status === 'unauthorized') {
+                        window.top.location.href = "<?= scriptUrl ?>?page=login";
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isFetching = false;
+                    this.isLoading = false;
+                    this.showNotif('error', 'Gagal memuat data: ' + error.message);
+                })
+                .getAbsensi(localStorage.getItem('spensa_token'), this.filter.kelas_id, this.filter.tanggal);
+        },
+        
+        setAll(status) {
+            this.siswas.forEach(siswa => siswa.status = status);
+        },
+        
+        submitAbsensi() {
+            if (this.siswas.length === 0) return;
+            
+            this.isSaving = true;
+            
+            const payload = {
+                tanggal: this.activeTanggal,
+                absensi: this.siswas.map(s => ({
+                    siswa_id: s.id,
+                    status: s.status
+                }))
+            };
+            
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isSaving = false;
+                    if (response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        // Refresh data to update 'Data di DB' column
+                        this.fetchAbsensi(); 
+                    } else if (response.status === 'unauthorized') {
+                        window.top.location.href = "<?= scriptUrl ?>?page=login";
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isSaving = false;
+                    this.showNotif('error', 'Gagal menyimpan data: ' + error.message);
+                })
+                .storeAbsensi(localStorage.getItem('spensa_token'), payload);
+        },
+        
+        deleteAbsensiByDate() {
+            const formattedDate = this.formatDate(this.activeTanggal);
+            const msg = `⚠️ YAKIN ingin menghapus SELURUH data absensi tanggal ${formattedDate} untuk kelas yang dipilih? Tindakan ini tidak dapat dibatalkan!`;
+            
+            if (!confirm(msg)) return;
+            
+            this.isDeleting = true;
+            
+            const payload = {
+                tanggal_hapus: this.activeTanggal,
+                kelas_id_hapus: this.deleteFilter.kelas_id_hapus
+            };
+            
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.isDeleting = false;
+                    if (response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        this.fetchAbsensi();
+                    } else if (response.status === 'unauthorized') {
+                        window.top.location.href = "<?= scriptUrl ?>?page=login";
+                    } else {
+                        this.showNotif('error', response.message);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.isDeleting = false;
+                    this.showNotif('error', 'Gagal menghapus data: ' + error.message);
+                })
+                .destroyAbsensiByDate(localStorage.getItem('spensa_token'), payload);
+        },
+
+        // Helpers
+        getColorClass(status, adaData) {
+            let classes = '';
+            if (status === 'hadir') classes = 'text-emerald-700 bg-emerald-50 border-emerald-300';
+            else if (status === 'sakit') classes = 'text-amber-700 bg-amber-50 border-amber-300';
+            else if (status === 'izin') classes = 'text-blue-700 bg-blue-50 border-blue-300';
+            else if (status === 'dispen') classes = 'text-purple-700 bg-purple-50 border-purple-300';
+            else if (status === 'alpha') classes = 'text-red-700 bg-red-50 border-red-300';
+            else classes = 'border-slate-200 text-slate-500';
+            
+            // If data exists, make border slightly thicker visually
+            if (adaData && status) {
+                classes = classes.replace(/border-[a-z]+-300/, match => match.replace('300', '400')); // slight enhancement
+            }
+            return classes;
+        },
+        
+        getBadgeColor(status) {
+            if (status === 'hadir') return 'text-emerald-700 bg-emerald-50 border-emerald-200';
+            if (status === 'sakit') return 'text-amber-700 bg-amber-50 border-amber-200';
+            if (status === 'izin') return 'text-blue-700 bg-blue-50 border-blue-200';
+            if (status === 'dispen') return 'text-purple-700 bg-purple-50 border-purple-200';
+            if (status === 'alpha') return 'text-red-700 bg-red-50 border-red-200';
+            return 'text-slate-700 bg-slate-50 border-slate-200';
+        },
+
+        getActiveKelasName() {
+            const k = this.kelasList.find(k => k.id == this.activeKelasId);
+            return k ? k.nama_kelas : '';
+        },
+        
+        formatDate(dateStr) {
+            if (!dateStr) return '';
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('id-ID', options);
+        }
+    }
+}
+</script>

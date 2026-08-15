@@ -1,0 +1,88 @@
+<div class="min-h-[80vh] flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8" x-data="loginForm()">
+    <div class="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
+        <div>
+            <h2 class="mt-2 text-center text-3xl font-extrabold text-slate-900">
+                Masuk Sistem
+            </h2>
+            <p class="mt-2 text-center text-sm text-slate-600">
+                Gunakan username dan password Anda
+            </p>
+        </div>
+        
+        <form class="mt-8 space-y-6" @submit.prevent="submitLogin">
+            
+            <template x-if="errorMessage">
+                <div class="bg-red-50 text-red-500 p-3 rounded-md text-sm" x-text="errorMessage">
+                </div>
+            </template>
+
+            <div class="rounded-md shadow-sm -space-y-px">
+                <div>
+                    <label for="username" class="sr-only">Username</label>
+                    <input id="username" name="username" type="text" x-model="form.username" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-t-md focus:outline-none focus:ring-brand focus:border-brand focus:z-10 sm:text-sm" placeholder="Username / Nomer Induk">
+                </div>
+                <div>
+                    <label for="password" class="sr-only">Password</label>
+                    <input id="password" name="password" type="password" x-model="form.password" required class="appearance-none rounded-none relative block w-full px-3 py-3 border border-slate-300 placeholder-slate-500 text-slate-900 rounded-b-md focus:outline-none focus:ring-brand focus:border-brand focus:z-10 sm:text-sm" placeholder="Password">
+                </div>
+            </div>
+
+            <div>
+                <button type="submit" :disabled="loading" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-brand hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand transition shadow-lg shadow-blue-500/30 disabled:opacity-50">
+                    <span x-show="!loading">Sign in</span>
+                    <span x-show="loading">Memproses...</span>
+                </button>
+            </div>
+            
+            <div class="text-center mt-4">
+                <a href="<?= scriptUrl ?>?page=home" target="_top" class="text-sm font-medium text-brand hover:text-blue-500">
+                    &larr; Kembali ke Beranda
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function loginForm() {
+        return {
+            form: {
+                username: '',
+                password: ''
+            },
+            errorMessage: '',
+            loading: false,
+            
+            submitLogin() {
+                this.loading = true;
+                this.errorMessage = '';
+                
+                // Panggil backend
+                google.script.run
+                    .withSuccessHandler((response) => {
+                        this.loading = false;
+                        if (response.status === 'success') {
+                            // Simpan token di localStorage (karena session GAS stateless)
+                            localStorage.setItem('spensa_token', response.data.token);
+                            localStorage.setItem('spensa_user', JSON.stringify(response.data.user));
+                            
+                            // Arahkan ke dashboard internal via URL parameter
+                            window.top.location.href = "<?= scriptUrl ?>?page=dashboard-" + response.data.user.role + "&token=" + response.data.token;
+                        } else if (response.status === 'validation_error') {
+                            const firstKey = Object.keys(response.errors)[0];
+                            this.errorMessage = response.errors[firstKey][0];
+                        } else {
+                            this.errorMessage = response.message;
+                        }
+                    })
+                    .withFailureHandler((error) => {
+                        this.loading = false;
+                        this.errorMessage = "Koneksi server gagal: " + error.message;
+                    })
+                    .login(this.form); // Akan memanggil AuthService.login di server jika di-expose, 
+                                       // karena AuthService.login belum di expose ke client-side RPC, 
+                                       // kita asumsikan ada wrapper fungsi `login(data)` di Code.gs nanti.
+            }
+        }
+    }
+</script>
