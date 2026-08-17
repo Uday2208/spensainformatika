@@ -1,29 +1,36 @@
 {
     "version": 2,
-      "framework": null,
+    "framework": null,
     "functions": {
-        "api/index.php": { "runtime": "vercel-php@0.7.4" }
+        "api/index.php": {
+            "runtime": "vercel-php@0.7.4",
+            "maxDuration": 30
+        }
     },
     "routes": [
         {
+            "src": "/uploads/(.*)",
+            "dest": "/uploads/$1"
+        },
+        {
             "src": "/build/(.*)",
-            "dest": "/public/build/"
+            "dest": "/public/build/$1"
         },
         {
             "src": "/css/(.*)",
-            "dest": "/public/css/"
-        },
-        {
-            "src": "/images/(.*)",
-            "dest": "/public/images/"
+            "dest": "/public/css/$1"
         },
         {
             "src": "/js/(.*)",
-            "dest": "/public/js/"
+            "dest": "/public/js/$1"
         },
         {
-            "src": "/vendors/(.*)",
-            "dest": "/public/vendors/"
+            "src": "/favicon.ico",
+            "dest": "/public/favicon.ico"
+        },
+        {
+            "src": "/robots.txt",
+            "dest": "/public/robots.txt"
         },
         {
             "src": "/(.*)",
@@ -32,18 +39,15 @@
     ],
     "env": {
         "APP_ENV": "production",
-        "APP_DEBUG": "true",
-        "APP_URL": "",
- 
-        "APP_CONFIG_CACHE": "/tmp/config.php",
-        "APP_EVENTS_CACHE": "/tmp/events.php",
-        "APP_PACKAGES_CACHE": "/tmp/packages.php",
-        "APP_ROUTES_CACHE": "/tmp/routes.php",
-        "APP_SERVICES_CACHE": "/tmp/services.php",
-        "VIEW_COMPILED_PATH": "/tmp",
- 
-        "CACHE_DRIVER": "array",
-        "LOG_CHANNEL": "stderr",
-        "SESSION_DRIVER": "cookie"
+        "APP_DEBUG": "false",
+        "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
+        "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
+        "APP_PACKAGES_CACHE": "/tmp/bootstrap/cache/packages.php",
+        "APP_ROUTES_CACHE": "/tmp/bootstrap/cache/routes.php",
+        "APP_SERVICES_CACHE": "/tmp/bootstrap/cache/services.php",
+        "VIEW_COMPILED_PATH": "/tmp/storage/framework/views",
+        "CACHE_STORE": "array",
+        "SESSION_DRIVER": "cookie",
+        "LOG_CHANNEL": "stderr"
     }
 }

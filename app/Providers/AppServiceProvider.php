@@ -15,7 +15,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // XAMPP serves from project root (not public/), so override public_path
+        $this->app->usePublicPath($this->app->basePath());
     }
 
     /**

@@ -1,0 +1,10 @@
+/vendor
+/node_modules
+.git
+.github
+/tests
+phpunit.xml
+.phpunit.result.cache
+.editorconfig
+/storage/logs/*
+!/storage/logs/.gitkeep

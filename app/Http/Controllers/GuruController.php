@@ -1072,15 +1072,11 @@ class GuruController extends Controller
         if ($materi->foto) {
             $fotoPath = public_path('uploads/materi/' . $materi->foto);
             if (File::exists($fotoPath)) File::delete($fotoPath);
-            $basePath = base_path('uploads/materi/' . $materi->foto);
-            if (File::exists($basePath)) File::delete($basePath);
         }
 
         if ($materi->file_materi) {
             $filePath = public_path('uploads/materi/' . $materi->file_materi);
             if (File::exists($filePath)) File::delete($filePath);
-            $basePath = base_path('uploads/materi/' . $materi->file_materi);
-            if (File::exists($basePath)) File::delete($basePath);
         }
 
         $materi->delete();
@@ -1110,32 +1106,14 @@ class GuruController extends Controller
 
         $uploadedImages = [];
         if ($request->hasFile('gambar')) {
-            $uploadDirs = array_unique([
-                public_path('uploads/artikel'),
-                base_path('uploads/artikel'),
-                base_path('public_html/uploads/artikel'),
-                base_path('htdocs/uploads/artikel'),
-            ]);
-
-            foreach ($uploadDirs as $dir) {
-                if (!File::exists($dir)) {
-                    @File::makeDirectory($dir, 0755, true, true);
-                }
+            $uploadDir = public_path('uploads/artikel');
+            if (!File::exists($uploadDir)) {
+                File::makeDirectory($uploadDir, 0755, true, true);
             }
-
-            $primaryDir = public_path('uploads/artikel');
 
             foreach ($request->file('gambar') as $file) {
                 $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move($primaryDir, $filename);
-
-                // Duplikat file ke folder alternatif (untuk komptabilitas Hosting/cPanel/InfinityFree)
-                foreach ($uploadDirs as $dir) {
-                    if ($dir !== $primaryDir && File::exists($primaryDir . '/' . $filename)) {
-                        @copy($primaryDir . '/' . $filename, $dir . '/' . $filename);
-                    }
-                }
-
+                $file->move($uploadDir, $filename);
                 $uploadedImages[] = $filename;
             }
         }
@@ -1166,45 +1144,25 @@ class GuruController extends Controller
         $artikel->konten = $request->konten;
 
         if ($request->hasFile('gambar')) {
-            $uploadDirs = array_unique([
-                public_path('uploads/artikel'),
-                base_path('uploads/artikel'),
-                base_path('public_html/uploads/artikel'),
-                base_path('htdocs/uploads/artikel'),
-            ]);
-
-            foreach ($uploadDirs as $dir) {
-                if (!File::exists($dir)) {
-                    @File::makeDirectory($dir, 0755, true, true);
-                }
+            $uploadDir = public_path('uploads/artikel');
+            if (!File::exists($uploadDir)) {
+                File::makeDirectory($uploadDir, 0755, true, true);
             }
 
             // Hapus gambar lama jika ada
             if ($artikel->gambar && is_array($artikel->gambar)) {
                 foreach ($artikel->gambar as $img) {
-                    foreach ($uploadDirs as $dir) {
-                        $targetFile = $dir . '/' . $img;
-                        if (File::exists($targetFile)) {
-                            @File::delete($targetFile);
-                        }
+                    $imgPath = $uploadDir . '/' . $img;
+                    if (File::exists($imgPath)) {
+                        File::delete($imgPath);
                     }
                 }
             }
 
-            $primaryDir = public_path('uploads/artikel');
             $uploadedImages = [];
-
             foreach ($request->file('gambar') as $file) {
                 $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move($primaryDir, $filename);
-
-                // Duplikat file ke semua lokasi web root hosting
-                foreach ($uploadDirs as $dir) {
-                    if ($dir !== $primaryDir && File::exists($primaryDir . '/' . $filename)) {
-                        @copy($primaryDir . '/' . $filename, $dir . '/' . $filename);
-                    }
-                }
-
+                $file->move($uploadDir, $filename);
                 $uploadedImages[] = $filename;
             }
 
@@ -1224,8 +1182,6 @@ class GuruController extends Controller
             foreach ($artikel->gambar as $img) {
                 $path = public_path('uploads/artikel/' . $img);
                 if (File::exists($path)) File::delete($path);
-                $basePath = base_path('uploads/artikel/' . $img);
-                if (File::exists($basePath)) File::delete($basePath);
             }
         }
 
@@ -1259,10 +1215,6 @@ class GuruController extends Controller
                 $oldPath = public_path('uploads/logo/' . $oldLogo->value);
                 if (\Illuminate\Support\Facades\File::exists($oldPath)) {
                     \Illuminate\Support\Facades\File::delete($oldPath);
-                }
-                $baseOldPath = base_path('uploads/logo/' . $oldLogo->value);
-                if (\Illuminate\Support\Facades\File::exists($baseOldPath)) {
-                    \Illuminate\Support\Facades\File::delete($baseOldPath);
                 }
             }
             

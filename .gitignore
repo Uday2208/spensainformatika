@@ -22,3 +22,21 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Uploaded user content
+/public/uploads/artikel/*
+/public/uploads/avatars/*
+/public/uploads/logo/*
+/public/uploads/materi/*
+!/public/uploads/artikel/.gitkeep
+!/public/uploads/avatars/.gitkeep
+!/public/uploads/logo/.gitkeep
+!/public/uploads/materi/.gitkeep
+
+# Files that should not be in repo
+composer.phar
+/database/database.sqlite
+/database/hosting_backup
+/_backup
+/htdocs
+/public_html
