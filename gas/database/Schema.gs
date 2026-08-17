@@ -50,14 +50,14 @@ const DB_SCHEMA = {
   nilais: {
     table: 'nilais',
     primaryKey: 'id',
-    columns: ['id', 'siswa_id', 'bab', 'nilai_tugas', 'ulangan', 'created_at', 'updated_at'],
+    columns: ['id', 'siswa_id', 'bab', 'tugas', 'quiz', 'proyek', 'ulangan', 'nilai_akhir', 'created_at', 'updated_at'],
     constraints: {
       unique_composite: [['siswa_id', 'bab']],
       foreignKeys: {
         siswa_id: { table: 'siswas', column: 'id', onDelete: 'cascade' }
       }
     },
-    defaults: { nilai_tugas: 0, ulangan: 0 }
+    defaults: { tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }
   },
   penilaian_harians: {
     table: 'penilaian_harians',
@@ -176,7 +176,7 @@ const DB_SCHEMA = {
   artikels: {
     table: 'artikels',
     primaryKey: 'id',
-    columns: ['id', 'judul', 'slug', 'konten', 'image', 'created_at', 'updated_at'],
+    columns: ['id', 'judul', 'slug', 'konten', 'gambar', 'created_at', 'updated_at'],
     constraints: {
       unique: ['slug']
     }

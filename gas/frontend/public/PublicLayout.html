@@ -18,6 +18,14 @@
             }
         }
     </script>
+    <!-- Global Data for Home Page (Raw JSON Injection) -->
+    <script>
+        window.appData = {
+            stats: <?!= (typeof statsJSON !== 'undefined' && statsJSON) ? statsJSON : '{"siswa":0,"kelas":0,"materi":0}' ?>,
+            artikels: <?!= (typeof artikelsJSON !== 'undefined' && artikelsJSON) ? artikelsJSON : '[]' ?>,
+            komentars: <?!= (typeof komentarsJSON !== 'undefined' && komentarsJSON) ? komentarsJSON : '[]' ?>
+        };
+    </script>
     <!-- Alpine.js (CDN) -->
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -88,18 +96,6 @@
             <p class="text-slate-400">&copy; 2026 Guru Informatika. Hak cipta dilindungi.</p>
         </div>
     </footer>
-    
-    <!-- Alpine Global Data Scripts -->
-    <? if (page === 'home') { ?>
-    <script>
-        // Mem-parsing JSON dari server ke global window object
-        window.appData = {
-            stats: <?= statsJSON ?>,
-            artikels: <?= artikelsJSON ?>,
-            komentars: <?= komentarsJSON ?>
-        };
-    </script>
-    <? } ?>
 
 </body>
 </html>

@@ -17,7 +17,7 @@
                         
                         <!-- Image / Thumbnail -->
                         <div class="w-full h-48 overflow-hidden bg-slate-100 relative">
-                            <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80" :alt="artikel.judul" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            <img :src="(artikel.gambar && artikel.gambar.length > 0) ? (Array.isArray(artikel.gambar) ? artikel.gambar[0] : (typeof artikel.gambar === 'string' && artikel.gambar.startsWith('[') ? JSON.parse(artikel.gambar)[0] : artikel.gambar)) : 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80'" :alt="artikel.judul" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                             <div class="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-brand text-[11px] font-bold px-2.5 py-1 rounded-full shadow-sm">
                                 Artikel
                             </div>
@@ -28,10 +28,10 @@
                             <div>
                                 <div class="text-xs font-semibold text-slate-400 mb-2 flex items-center">
                                     <svg class="w-3.5 h-3.5 mr-1 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    <span x-text="artikel.created_at"></span>
+                                    <span x-text="artikel.created_at ? (isNaN(new Date(artikel.created_at)) ? artikel.created_at : new Date(artikel.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})) : ''"></span>
                                 </div>
-                                <h3 class="text-lg font-bold text-slate-900 mb-3 group-hover:text-brand transition-colors line-clamp-2 leading-snug" x-text="artikel.judul"></h3>
-                                <p class="text-slate-600 text-sm line-clamp-3 leading-relaxed" x-text="artikel.konten.substring(0, 120) + '...'"></p>
+                                <h3 class="text-lg font-bold text-slate-900 mb-3 group-hover:text-brand transition-colors line-clamp-2 leading-snug" x-text="artikel.judul || 'Tanpa Judul'"></h3>
+                                <p class="text-slate-600 text-sm line-clamp-3 leading-relaxed" x-text="(artikel.konten || '').substring(0, 120) + '...'"></p>
                             </div>
                             
                             <div class="mt-5 pt-4 border-t border-slate-100 flex items-center text-sm font-bold text-brand group-hover:translate-x-1 transition-transform">

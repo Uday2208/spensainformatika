@@ -1,0 +1,567 @@
+<!-- HasilUjian.html - Rekap Hasil & Koreksi Ujian (Guru Side) -->
+<div x-data="hasilUjianGuruData()" x-init="initData()" class="space-y-6">
+
+    <!-- NOTIFIKASI TOAST / BANNER -->
+    <template x-if="notification.show">
+        <div :class="notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : 'bg-red-50 border-red-200 text-red-800'" class="mb-4 flex items-center gap-3 border p-4 rounded-2xl shadow-sm transition-all duration-300">
+            <div :class="notification.type === 'success' ? 'bg-emerald-500' : 'bg-red-500'" class="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                <svg x-show="notification.type === 'success'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+                <svg x-show="notification.type === 'error'" class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </div>
+            <p class="font-semibold text-sm" x-text="notification.message"></p>
+            <button @click="notification.show = false" class="ml-auto text-current opacity-50 hover:opacity-100 transition-opacity">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </template>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: DAFTAR HASIL & KOREKSI UJIAN (INDEX VIEW) -->
+    <!-- ========================================================================= -->
+    <template x-if="viewMode === 'index'">
+        <div class="space-y-5">
+            <!-- Header Banner -->
+            <div class="flex items-start gap-4 bg-gradient-to-r from-blue-900 to-indigo-900 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+                <div class="w-12 h-12 bg-blue-500/30 border border-blue-400/30 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg backdrop-blur-sm">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                    </svg>
+                </div>
+                <div class="relative flex-1 min-w-0">
+                    <h2 class="text-white font-bold text-base leading-tight">Daftar Hasil & Koreksi Ujian</h2>
+                    <p class="text-blue-200 text-xs mt-1 leading-relaxed">
+                        Pilih paket ujian di bawah ini untuk memeriksa lembar pengerjaan siswa, melakukan koreksi essay, dan memfinalisasi nilai ke rekap nilai utama.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Table Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-bold text-slate-600">Filter Status:</label>
+                        <select x-model="statusFilter" @change="fetchList()" class="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-700 cursor-pointer focus:ring-2 focus:ring-blue-500">
+                            <option value="">Semua Status</option>
+                            <option value="draft">Draft</option>
+                            <option value="aktif">Aktif</option>
+                            <option value="selesai">Selesai</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Loading State -->
+                <div x-show="loadingList" class="py-12 text-center">
+                    <svg class="animate-spin h-8 w-8 text-blue-600 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                    <p class="text-xs text-slate-500 font-medium">Memuat hasil ujian...</p>
+                </div>
+
+                <!-- Table -->
+                <div x-show="!loadingList" class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-extrabold border-b border-slate-200">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4">Judul Ujian & Bab</th>
+                                <th class="py-3 px-4">Tanggal & Durasi</th>
+                                <th class="py-3 px-4">Kelas Peserta</th>
+                                <th class="py-3 px-4 text-center">Peserta Selesai</th>
+                                <th class="py-3 px-4 text-center">Status Ujian</th>
+                                <th class="py-3 px-4 text-center w-44">Aksi / Koreksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+                            <template x-for="(u, idx) in ujians" :key="u.id">
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-4 px-4 text-center text-slate-400 font-bold" x-text="idx + 1"></td>
+                                    <td class="py-4 px-4">
+                                        <span class="font-extrabold text-slate-800 block text-xs leading-tight" x-text="u.judul"></span>
+                                        <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-bold uppercase inline-block mt-1 border border-slate-200" x-text="u.bab"></span>
+                                    </td>
+                                    <td class="py-4 px-4 text-xs text-slate-600">
+                                        <div x-text="`📅 ${formatDateShort(u.tanggal)}`"></div>
+                                        <div class="text-slate-400 font-semibold mt-0.5" x-text="`⏱️ ${u.durasi} Menit`"></div>
+                                    </td>
+                                    <td class="py-4 px-4">
+                                        <div class="flex flex-wrap gap-1">
+                                            <template x-for="k in u.kelasList" :key="k.id">
+                                                <span class="px-2 py-0.5 bg-blue-50 text-blue-800 text-[10px] font-bold rounded-md border border-blue-100" x-text="k.nama_kelas"></span>
+                                            </template>
+                                            <template x-if="!u.kelasList || u.kelasList.length === 0">
+                                                <span class="text-[10px] text-slate-400 italic">Belum diaktifkan</span>
+                                            </template>
+                                        </div>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <span class="px-2.5 py-1 bg-slate-100 text-slate-800 rounded-xl font-black text-xs border border-slate-200" x-text="`${u.selesai_count} Siswa`"></span>
+                                        <template x-if="u.perlu_koreksi">
+                                            <span class="block text-[10px] text-amber-700 font-bold mt-1 animate-pulse">⚠️ Perlu Koreksi Essay</span>
+                                        </template>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <template x-if="u.status === 'draft'">
+                                            <span class="inline-block px-2.5 py-0.5 bg-slate-100 text-slate-700 text-[11px] font-bold rounded-full border border-slate-200">Draft</span>
+                                        </template>
+                                        <template x-if="u.status === 'aktif'">
+                                            <span class="inline-block px-2.5 py-0.5 bg-green-100 text-green-700 text-[11px] font-bold rounded-full border border-green-200">Aktif</span>
+                                        </template>
+                                        <template x-if="u.status === 'selesai'">
+                                            <span class="inline-block px-2.5 py-0.5 bg-amber-100 text-amber-700 text-[11px] font-bold rounded-full border border-amber-200">Selesai</span>
+                                        </template>
+                                    </td>
+                                    <td class="py-4 px-4 text-center">
+                                        <button @click="openHasilShow(u.id)" class="bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-1.5 px-3.5 rounded-xl shadow-md transition-all active:scale-[0.98] inline-flex items-center gap-1.5 border border-blue-700">
+                                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                            Periksa Hasil ➔
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="ujians.length === 0">
+                                <tr>
+                                    <td colspan="7" class="text-center py-10 text-slate-400 text-xs italic">Belum ada paket ujian terdaftar.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: REKAP HASIL SISWA PER UJIAN (SHOW VIEW) -->
+    <!-- ========================================================================= -->
+    <template x-if="viewMode === 'show'">
+        <div class="space-y-6">
+            <!-- Exam Summary Card -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs bg-slate-100 text-slate-600 font-extrabold px-2.5 py-0.5 rounded-md border border-slate-200 uppercase" x-text="detailData.ujian.bab"></span>
+                        <span class="text-xs text-slate-400 font-semibold" x-text="`KKM: ${detailData.kkm}`"></span>
+                    </div>
+                    <h2 class="text-xl font-black text-slate-800" x-text="detailData.ujian.judul"></h2>
+                </div>
+
+                <div class="flex items-center gap-2.5 flex-wrap">
+                    <template x-if="detailData.ujian.status === 'selesai'">
+                        <button @click="confirmFinalisasi(detailData.ujian)" class="bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold px-4 py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-[0.98] border border-emerald-700 flex items-center gap-1.5">
+                            📌 Finalisasi & Push ke Rekap Nilai
+                        </button>
+                    </template>
+                    <button @click="viewMode = 'index'; fetchList()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2.5 rounded-xl text-xs transition-all">
+                        ← Kembali
+                    </button>
+                </div>
+            </div>
+
+            <!-- Student Results Table -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-4">
+                <div class="flex flex-wrap justify-between items-center pb-4 border-b border-slate-100 gap-4">
+                    <div>
+                        <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
+                            <span>📋 Hasil & Lembar Pengerjaan Siswa</span>
+                            <span class="text-xs bg-blue-100 text-blue-800 font-extrabold px-2.5 py-0.5 rounded-full border border-blue-200" x-text="`Total: ${detailData.hasil.length}`"></span>
+                        </h3>
+                        <p class="text-[11px] text-slate-500 font-medium mt-0.5">Filter dan periksa hasil pengerjaan ujian siswa per rombel / kelas.</p>
+                    </div>
+
+                    <!-- Filter Kelas -->
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs font-extrabold text-slate-600 flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"></path></svg>
+                            Filter Kelas:
+                        </label>
+                        <select x-model="selectedKelas" @change="fetchHasilDetail(detailData.ujian.id, selectedKelas)" class="text-xs font-bold text-slate-800 bg-white border border-slate-300 rounded-xl px-3 py-1.5 focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            <option value="">Semua Kelas</option>
+                            <template x-for="k in detailData.kelasList" :key="k.id">
+                                <option :value="k.id" x-text="`Kelas ${k.nama_kelas}`"></option>
+                            </template>
+                        </select>
+                        <template x-if="selectedKelas">
+                            <button @click="selectedKelas = ''; fetchHasilDetail(detailData.ujian.id, '')" class="text-xs font-bold text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 px-3 py-1.5 rounded-xl transition-colors">
+                                ✕ Reset
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 text-slate-600 text-xs uppercase font-extrabold border-b border-slate-200">
+                                <th class="py-3 px-4 w-12 text-center">No</th>
+                                <th class="py-3 px-4">Nama Siswa</th>
+                                <th class="py-3 px-4">Kelas</th>
+                                <th class="py-3 px-4 text-center">Skor PG</th>
+                                <th class="py-3 px-4 text-center">Skor Essay</th>
+                                <th class="py-3 px-4 text-center">Nilai Akhir</th>
+                                <th class="py-3 px-4 text-center">Status KKM</th>
+                                <th class="py-3 px-4 text-center">Deteksi Tab Switch</th>
+                                <th class="py-3 px-4 text-center w-36">Aksi Inspeksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-xs font-medium">
+                            <template x-for="(h, hIdx) in detailData.hasil" :key="h.id">
+                                <tr class="hover:bg-slate-50 transition-colors">
+                                    <td class="py-3 px-4 text-center text-slate-400 font-bold" x-text="hIdx + 1"></td>
+                                    <td class="py-3 px-4">
+                                        <span class="font-bold text-slate-800 block text-xs" x-text="h.nama_siswa"></span>
+                                        <span class="text-[10px] text-slate-400 font-mono" x-text="`NIS: ${h.nis || '-'}`"></span>
+                                    </td>
+                                    <td class="py-3 px-4 font-bold text-slate-600" x-text="h.nama_kelas"></td>
+                                    <td class="py-3 px-4 text-center font-bold text-slate-700" x-text="h.nilai_pg"></td>
+                                    <td class="py-3 px-4 text-center font-bold text-indigo-700" x-text="h.nilai_essay"></td>
+                                    <td class="py-3 px-4 text-center font-black text-sm text-blue-700 bg-blue-50/20" x-text="h.nilai_akhir"></td>
+                                    <td class="py-3 px-4 text-center">
+                                        <template x-if="h.is_lulus">
+                                            <span class="inline-block px-2 py-0.5 bg-green-100 text-green-800 text-[10px] font-extrabold rounded-full border border-green-200">LULUS</span>
+                                        </template>
+                                        <template x-if="!h.is_lulus">
+                                            <span class="inline-block px-2 py-0.5 bg-red-100 text-red-800 text-[10px] font-extrabold rounded-full border border-red-200">REMEDIAL</span>
+                                        </template>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <span :class="h.tab_switch_count > 3 ? 'bg-red-100 text-red-700 border-red-200' : (h.tab_switch_count > 0 ? 'bg-amber-100 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500')" class="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold border" x-text="`${h.tab_switch_count}x`"></span>
+                                    </td>
+                                    <td class="py-3 px-4 text-center">
+                                        <button @click="openDetailSiswa(detailData.ujian.id, h.siswa_id)" class="text-blue-600 hover:text-blue-800 font-extrabold text-[11px] bg-blue-50 hover:bg-blue-100 py-1.5 px-3 rounded-xl border border-blue-200 transition-colors inline-flex items-center gap-1">
+                                            Periksa Lembar ➔
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="detailData.hasil.length === 0">
+                                <tr>
+                                    <td colspan="9" class="text-center py-10 text-slate-400 text-xs italic">Tidak ada siswa yang sesuai filter ini.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 3: LEMBAR PERIKSA JAWABAN SISWA INDIVIDU (DETAIL SISWA VIEW) -->
+    <!-- ========================================================================= -->
+    <template x-if="viewMode === 'detail_siswa'">
+        <div class="space-y-6">
+            <div class="flex justify-between items-center">
+                <button @click="viewMode = 'show'" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-2 rounded-xl text-xs transition-all inline-flex items-center gap-1.5">
+                    ← Kembali ke Rekap Hasil Ujian
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Student Summary & Score Override Form -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 h-fit space-y-4">
+                    <div class="pb-3 border-b border-slate-100">
+                        <span class="text-[10px] bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-md font-bold uppercase" x-text="siswaJawaban.siswa.nama_kelas"></span>
+                        <h2 class="text-base font-black text-slate-800 mt-1" x-text="siswaJawaban.siswa.nama"></h2>
+                        <p class="text-xs text-slate-400 font-mono" x-text="`NIS: ${siswaJawaban.siswa.nis || '-'}`"></p>
+                    </div>
+
+                    <div class="space-y-3 text-xs">
+                        <div>
+                            <label class="text-slate-400 text-[10px] font-semibold block">Paket Ujian</label>
+                            <span class="font-bold text-slate-800 block text-xs" x-text="siswaJawaban.ujian.judul"></span>
+                            <span class="text-slate-500 font-medium" x-text="`Materi: ${siswaJawaban.ujian.bab}`"></span>
+                        </div>
+
+                        <!-- Score Display & Override -->
+                        <form @submit.prevent="submitOverrideNilai" class="space-y-3 pt-2 border-t border-slate-100">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="bg-slate-50 p-2 rounded-xl border border-slate-200 text-center">
+                                    <label class="text-slate-400 text-[10px] font-bold block uppercase mb-1">Skor PG</label>
+                                    <input type="number" step="0.1" min="0" max="100" x-model="formOverride.nilai_pg" @input="recalcOverride()" class="w-full bg-white border border-slate-300 rounded-md px-1 py-1 text-sm font-black text-center text-slate-800">
+                                </div>
+                                <div class="bg-indigo-50/50 p-2 rounded-xl border border-indigo-100 text-center">
+                                    <label class="text-indigo-500 text-[10px] font-bold block uppercase mb-1">Skor Essay</label>
+                                    <input type="number" step="0.1" min="0" max="100" x-model="formOverride.nilai_essay" @input="recalcOverride()" class="w-full bg-white border border-slate-300 rounded-md px-1 py-1 text-sm font-black text-center text-indigo-800">
+                                </div>
+                            </div>
+
+                            <div :class="formOverride.nilai_akhir >= siswaJawaban.kkm ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'" class="p-3.5 rounded-xl border text-center">
+                                <label class="text-[10px] font-bold block uppercase opacity-75">Nilai Akhir Ujian</label>
+                                <span class="text-2xl font-black block my-0.5" x-text="formOverride.nilai_akhir.toFixed(1)"></span>
+                                <span :class="formOverride.nilai_akhir >= siswaJawaban.kkm ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'" class="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full inline-block" x-text="formOverride.nilai_akhir >= siswaJawaban.kkm ? `LULUS KKM (${siswaJawaban.kkm})` : `REMEDIAL (KKM ${siswaJawaban.kkm})`"></span>
+                            </div>
+
+                            <button type="submit" :disabled="loadingSubmit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs py-2 rounded-xl shadow-md transition-all disabled:opacity-70">
+                                <span x-show="!loadingSubmit">Simpan Perubahan Nilai</span>
+                                <span x-show="loadingSubmit">Menyimpan...</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Right: Detailed Answer Sheet -->
+                <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm p-5 space-y-5">
+                    <h3 class="font-extrabold text-slate-800 text-sm pb-3 border-b border-slate-100">
+                        Lembar Jawaban Per Butir Soal (<span x-text="siswaJawaban.soals.length"></span> Butir)
+                    </h3>
+
+                    <div class="space-y-4">
+                        <template x-for="s in siswaJawaban.soals" :key="s.id">
+                            <div :class="s.tipe === 'pg' ? (s.is_correct ? 'border-green-200 bg-green-50/20' : 'border-red-200 bg-red-50/20') : 'border-indigo-200 bg-indigo-50/20'" class="p-4 rounded-xl border">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <span class="w-5 h-5 bg-slate-200 text-slate-800 rounded-full text-xs font-black flex items-center justify-center" x-text="s.no"></span>
+                                        <span class="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-700" x-text="s.tipe"></span>
+                                        <span class="text-[10px] text-slate-500 font-bold" x-text="`Bobot: ${s.bobot}`"></span>
+                                    </div>
+                                    <template x-if="s.tipe === 'pg'">
+                                        <span :class="s.is_correct ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'" class="text-[10px] font-black uppercase px-2 py-0.5 rounded border" x-text="s.is_correct ? 'BENAR (+Bobot)' : 'SALAH (0)'"></span>
+                                    </template>
+                                </div>
+
+                                <div class="text-slate-800 text-xs font-semibold mb-3 leading-relaxed whitespace-pre-line" x-text="s.pertanyaan"></div>
+
+                                <!-- PG Options -->
+                                <template x-if="s.tipe === 'pg'">
+                                    <div class="space-y-1.5 pl-2 text-xs">
+                                        <div :class="s.jawaban_siswa === 'a' ? (s.is_correct ? 'bg-green-100 text-green-900 font-bold border-green-300' : 'bg-red-100 text-red-900 font-bold border-red-300') : (s.jawaban_benar === 'a' ? 'bg-green-50 text-green-900 border-green-200 font-semibold' : 'bg-white border-slate-200 text-slate-700')" class="p-2 rounded-lg border flex items-center justify-between">
+                                            <span><strong>A.</strong> <span x-text="s.opsi_a"></span></span>
+                                            <template x-if="s.jawaban_siswa === 'a'">
+                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.2 rounded bg-white/80">Dipilih Siswa</span>
+                                            </template>
+                                        </div>
+                                        <div :class="s.jawaban_siswa === 'b' ? (s.is_correct ? 'bg-green-100 text-green-900 font-bold border-green-300' : 'bg-red-100 text-red-900 font-bold border-red-300') : (s.jawaban_benar === 'b' ? 'bg-green-50 text-green-900 border-green-200 font-semibold' : 'bg-white border-slate-200 text-slate-700')" class="p-2 rounded-lg border flex items-center justify-between">
+                                            <span><strong>B.</strong> <span x-text="s.opsi_b"></span></span>
+                                            <template x-if="s.jawaban_siswa === 'b'">
+                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.2 rounded bg-white/80">Dipilih Siswa</span>
+                                            </template>
+                                        </div>
+                                        <div :class="s.jawaban_siswa === 'c' ? (s.is_correct ? 'bg-green-100 text-green-900 font-bold border-green-300' : 'bg-red-100 text-red-900 font-bold border-red-300') : (s.jawaban_benar === 'c' ? 'bg-green-50 text-green-900 border-green-200 font-semibold' : 'bg-white border-slate-200 text-slate-700')" class="p-2 rounded-lg border flex items-center justify-between">
+                                            <span><strong>C.</strong> <span x-text="s.opsi_c"></span></span>
+                                            <template x-if="s.jawaban_siswa === 'c'">
+                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.2 rounded bg-white/80">Dipilih Siswa</span>
+                                            </template>
+                                        </div>
+                                        <div :class="s.jawaban_siswa === 'd' ? (s.is_correct ? 'bg-green-100 text-green-900 font-bold border-green-300' : 'bg-red-100 text-red-900 font-bold border-red-300') : (s.jawaban_benar === 'd' ? 'bg-green-50 text-green-900 border-green-200 font-semibold' : 'bg-white border-slate-200 text-slate-700')" class="p-2 rounded-lg border flex items-center justify-between">
+                                            <span><strong>D.</strong> <span x-text="s.opsi_d"></span></span>
+                                            <template x-if="s.jawaban_siswa === 'd'">
+                                                <span class="text-[10px] uppercase font-black px-1.5 py-0.2 rounded bg-white/80">Dipilih Siswa</span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Essay Answer Box -->
+                                <template x-if="s.tipe === 'essay'">
+                                    <div class="space-y-1 pl-2">
+                                        <label class="text-[10px] font-bold text-slate-500">Jawaban Essay Siswa:</label>
+                                        <template x-if="s.jawaban_siswa && s.jawaban_siswa.trim() !== ''">
+                                            <div class="text-slate-800 bg-white p-3 rounded-xl border border-slate-200 font-mono text-xs whitespace-pre-wrap" x-text="s.jawaban_siswa"></div>
+                                        </template>
+                                        <template x-if="!s.jawaban_siswa || s.jawaban_siswa.trim() === ''">
+                                            <div class="text-red-500 italic text-xs p-1">Siswa tidak menjawab pertanyaan ini.</div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+</div>
+
+<!-- ALPINE JS LOGIC -->
+<script>
+function hasilUjianGuruData() {
+    return {
+        viewMode: 'index', // 'index', 'show', 'detail_siswa'
+        loadingList: true,
+        loadingSubmit: false,
+        statusFilter: '',
+        ujians: [],
+
+        // Show View State
+        detailData: {
+            ujian: {},
+            kkm: 75,
+            has_essay: false,
+            kelasList: [],
+            selected_kelas: '',
+            hasil: []
+        },
+        selectedKelas: '',
+
+        // Detail Siswa State
+        siswaJawaban: {
+            ujian: {},
+            siswa: {},
+            hasil: {},
+            kkm: 75,
+            soals: [],
+            logs: []
+        },
+        formOverride: {
+            nilai_pg: 0,
+            nilai_essay: 0,
+            nilai_akhir: 0
+        },
+
+        notification: {
+            show: false,
+            type: 'success',
+            message: ''
+        },
+
+        showNotif(type, message) {
+            this.notification.show = true;
+            this.notification.type = type;
+            this.notification.message = message;
+            setTimeout(() => { this.notification.show = false; }, 5000);
+        },
+
+        initData() {
+            this.fetchList();
+        },
+
+        fetchList() {
+            this.loadingList = true;
+            var token = localStorage.getItem('spensa_token');
+            if (!token) {
+                this.loadingList = false;
+                this.showNotif('error', 'Sesi login tidak ditemukan. Silakan login kembali.');
+                return;
+            }
+
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.loadingList = false;
+                    if (response && response.status === 'success') {
+                        this.ujians = response.data.ujians || [];
+                    } else {
+                        var errMsg = (response && response.message) ? response.message : 'Gagal memuat hasil ujian';
+                        this.showNotif('error', errMsg);
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.loadingList = false;
+                    this.showNotif('error', error.message || 'Terjadi kesalahan saat memuat hasil ujian');
+                })
+                .getHasilUjianList(token, this.statusFilter || '');
+        },
+
+        openHasilShow(ujianId) {
+            this.selectedKelas = '';
+            this.fetchHasilDetail(ujianId, '');
+        },
+
+        fetchHasilDetail(ujianId, kelasId) {
+            this.loadingList = true;
+            var token = localStorage.getItem('spensa_token');
+
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.loadingList = false;
+                    if (response && response.status === 'success') {
+                        this.detailData = response.data;
+                        this.viewMode = 'show';
+                    } else {
+                        this.showNotif('error', response ? response.message : 'Gagal memuat rekap hasil');
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.loadingList = false;
+                    this.showNotif('error', error.message);
+                })
+                .getHasilUjianDetail(token, ujianId, kelasId);
+        },
+
+        openDetailSiswa(ujianId, siswaId) {
+            this.loadingList = true;
+            var token = localStorage.getItem('spensa_token');
+
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.loadingList = false;
+                    if (response && response.status === 'success') {
+                        this.siswaJawaban = response.data;
+                        this.formOverride = {
+                            nilai_pg: response.data.hasil.nilai_pg || 0,
+                            nilai_essay: response.data.hasil.nilai_essay || 0,
+                            nilai_akhir: response.data.hasil.nilai_akhir || 0
+                        };
+                        this.viewMode = 'detail_siswa';
+                    } else {
+                        this.showNotif('error', response ? response.message : 'Gagal memuat lembar siswa');
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.loadingList = false;
+                    this.showNotif('error', error.message);
+                })
+                .getDetailJawabanSiswa(token, ujianId, siswaId);
+        },
+
+        recalcOverride() {
+            var nPg = parseFloat(this.formOverride.nilai_pg) || 0;
+            var nEssay = parseFloat(this.formOverride.nilai_essay) || 0;
+
+            if (this.detailData.has_essay) {
+                this.formOverride.nilai_akhir = (nPg + nEssay) / 2;
+            } else {
+                this.formOverride.nilai_akhir = nPg;
+            }
+        },
+
+        submitOverrideNilai() {
+            this.loadingSubmit = true;
+            var token = localStorage.getItem('spensa_token');
+
+            google.script.run
+                .withSuccessHandler((response) => {
+                    this.loadingSubmit = false;
+                    if (response && response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        this.openDetailSiswa(this.siswaJawaban.ujian.id, this.siswaJawaban.siswa.id);
+                    } else {
+                        this.showNotif('error', response ? response.message : 'Gagal menyimpan nilai');
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.loadingSubmit = false;
+                    this.showNotif('error', error.message);
+                })
+                .updateNilaiSiswaIndividu(token, this.siswaJawaban.ujian.id, this.siswaJawaban.siswa.id, this.formOverride);
+        },
+
+        confirmFinalisasi(ujian) {
+            if (!confirm('Finalisasi dan publish nilai ulangan "' + ujian.judul + '" ke Rekap Nilai Utama?')) return;
+            var token = localStorage.getItem('spensa_token');
+
+            google.script.run
+                .withSuccessHandler((response) => {
+                    if (response && response.status === 'success') {
+                        this.showNotif('success', response.message);
+                        this.fetchList();
+                        if (this.viewMode === 'show') this.fetchHasilDetail(ujian.id, this.selectedKelas);
+                    } else {
+                        this.showNotif('error', response ? response.message : 'Gagal finalisasi nilai');
+                    }
+                })
+                .withFailureHandler((error) => {
+                    this.showNotif('error', error.message);
+                })
+                .finalisasiUjian(token, ujian.id);
+        },
+
+        formatDateShort(dateStr) {
+            if (!dateStr) return '-';
+            try {
+                var d = new Date(dateStr);
+                if (isNaN(d)) return dateStr;
+                return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            } catch(e) { return dateStr; }
+        }
+    };
+}
+</script>

@@ -1,6 +1,7 @@
 /**
  * AuthService.gs
- * Migrasi dari AuthController.php dengan Security Enhancements (Throttle & Hashing)
+ * Migrasi dari AuthController.php dengan Security Enhancements (Throttle & Multi-Identifier Login)
+ * Mendukung Login Guru (Username) & Siswa (Username / NIS Angka)
  */
 
 const AuthService = {
@@ -13,30 +14,79 @@ const AuthService = {
     const errors = FormValidator.validate(data, rules);
     if (errors) return ResponseFormat.validationError(errors);
     
-    const username = data.username.toLowerCase();
+    const inputIdentifier = String(data.username || '').trim();
+    const inputLower = inputIdentifier.toLowerCase();
     
     // 1. Rate Limiting Check
-    const throttle = Security.checkRateLimit(username);
+    const throttle = Security.checkRateLimit(inputLower);
     if (!throttle.allowed) {
       return ResponseFormat.error(throttle.message);
     }
     
-    // 2. Cari user berdasarkan username
-    const user = Database.table('users').where('username', '=', username).first();
+    // 2. Cari user berdasarkan username di tabel users
+    var allUsers = [];
+    try {
+      allUsers = Database.table('users').get() || [];
+    } catch(e) {
+      allUsers = [];
+    }
+
+    var user = allUsers.find(function(u) {
+      return String(u.username || '').trim().toLowerCase() === inputLower;
+    });
     
+    var siswaInfo = null;
+
+    // Jika tidak ditemukan di tabel users, periksa apakah input adalah NIS (Angka / String) di tabel siswas
     if (!user) {
-      Security.incrementRateLimit(username);
-      return ResponseFormat.error('These credentials do not match our records.');
+      try {
+        var allSiswas = Database.table('siswas').get() || [];
+        var matchedSiswa = allSiswas.find(function(s) {
+          var nisStr = String(s.nis || '').trim();
+          var nisnStr = String(s.nisn || '').trim();
+          return nisStr === inputIdentifier || nisnStr === inputIdentifier;
+        });
+        
+        if (matchedSiswa && matchedSiswa.user_id) {
+          user = allUsers.find(function(u) { return u.id == matchedSiswa.user_id; });
+          if (user) {
+            siswaInfo = {
+              siswa_id: matchedSiswa.id,
+              nis: matchedSiswa.nis,
+              kelas_id: matchedSiswa.kelas_id
+            };
+          }
+        }
+      } catch(e) {
+        Logger.log("Error checking siswas table: " + e.message);
+      }
+    } else if (user.role === 'siswa') {
+      try {
+        var allSiswas = Database.table('siswas').get() || [];
+        var mySiswa = allSiswas.find(function(s) { return s.user_id == user.id; });
+        if (mySiswa) {
+          siswaInfo = {
+            siswa_id: mySiswa.id,
+            nis: mySiswa.nis,
+            kelas_id: mySiswa.kelas_id
+          };
+        }
+      } catch(e) {}
     }
     
-    // 3. Verifikasi password dengan Hashing
+    if (!user) {
+      Security.incrementRateLimit(inputLower);
+      return ResponseFormat.error('Username / NIS atau password salah.');
+    }
+    
+    // 3. Verifikasi password (Mendukung hash SHA-256 maupun plain-text NIS/password)
     if (!Security.checkPassword(data.password, user.password)) {
-      Security.incrementRateLimit(username);
-      return ResponseFormat.error('These credentials do not match our records.');
+      Security.incrementRateLimit(inputLower);
+      return ResponseFormat.error('Username / NIS atau password salah.');
     }
     
     // 4. Sukses Login: Bersihkan Throttle
-    Security.clearRateLimit(username);
+    Security.clearRateLimit(inputLower);
     
     // 5. Create session token
     const token = SessionManager.createSession(user);
@@ -54,16 +104,17 @@ const AuthService = {
       redirect: redirectUrl,
       user: {
         id: user.id,
-        name: user.name,
-        username: user.username,
-        role: user.role
+        name: String(user.name || 'Pengguna'),
+        username: String(user.username || ''),
+        role: String(user.role || 'siswa'),
+        siswa: siswaInfo
       }
-    }, 'Login successful');
+    }, 'Login berhasil');
   },
   
   logout: function(token) {
     if (!token) return ResponseFormat.unauthorized('No session token provided');
     SessionManager.destroySession(token);
-    return ResponseFormat.success({ redirect: '/login' }, 'Logout successful');
+    return ResponseFormat.success({ redirect: '/login' }, 'Logout berhasil');
   }
 };

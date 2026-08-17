@@ -1,6 +1,6 @@
 /**
  * DashboardService.gs
- * Menyediakan agregasi data untuk Modul 1: Dashboard
+ * Menyediakan agregasi data untuk Dashboard Guru & Siswa
  */
 
 const DashboardService = {
@@ -55,13 +55,11 @@ const DashboardService = {
       let totalHadir = 0;
       dayData.forEach(a => { if (a.status === 'hadir') totalHadir++; });
       
-      // Kalkulasi persentase (dibagi total data hari itu, bukan total seluruh siswa)
       let percent = 0;
       if (dayData.length > 0) {
         percent = Math.round((totalHadir / dayData.length) * 100);
       }
       
-      // Format tanggal mirip 'D, d M'
       const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
       const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
       const dayName = days[d.getDay()];
@@ -84,5 +82,12 @@ const DashboardService = {
       chartLabels: chartLabels,
       chartData: chartData
     }, 'Data dashboard berhasil diambil');
+  },
+
+  /**
+   * Mengambil statistik & ringkasan akademik untuk Dashboard Siswa (Fase 7)
+   */
+  getSiswaDashboard: function(token) {
+    return SiswaService.getDashboard(token);
   }
 };

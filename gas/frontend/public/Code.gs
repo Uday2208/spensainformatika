@@ -67,30 +67,90 @@ function doGet(e) {
   
   // Pass Data dari Database jika halaman Home
   if (page === 'home') {
-    const stats = {
-      siswa: Database.table('siswas').get().length,
-      kelas: Database.table('kelas').get().length,
-      materi: 0 // Placeholder
-    };
-    template.statsJSON = JSON.stringify(stats);
-    
-    // Ambil artikel (asumsikan kita punya tabel artikels, kita mock up jika kosong)
-    let artikels = Database.table('artikels').get() || [];
-    if (artikels.length === 0) {
-      artikels = [
-        { judul: 'Panduan Pembelajaran Daring', konten: 'Berikut adalah panduan lengkap untuk...', created_at: '2026-08-14' },
-        { judul: 'Jadwal Ujian Semester Ganjil', konten: 'Ujian semester ganjil akan dilaksanakan...', created_at: '2026-08-12' },
-        { judul: 'Lomba Desain Web Nasional', konten: 'Pendaftaran lomba desain web telah dibuka...', created_at: '2026-08-10' }
+    let stats = { siswa: 0, kelas: 0, materi: 0 };
+    let artikelsList = [];
+    let komentarsList = [];
+
+    try {
+      stats.siswa = Database.table('siswas').get().length;
+      stats.kelas = Database.table('kelas').get().length;
+      stats.materi = Database.table('materis').get().length;
+    } catch(e) {
+      Logger.log("Error stats: " + e.message);
+    }
+
+    try {
+      let rawArtikels = Database.table('artikels').get() || [];
+      if (rawArtikels.length > 0) {
+        // Sort DESC
+        rawArtikels.sort(function(a, b) {
+          var dateA = new Date(a.created_at || 0).getTime();
+          var dateB = new Date(b.created_at || 0).getTime();
+          if (dateB !== dateA) return dateB - dateA;
+          return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
+        });
+
+        // Ambil 3 artikel teratas dan sanitasi ukurannya
+        artikelsList = rawArtikels.slice(0, 3).map(function(item) {
+          var coverImg = '';
+          if (item.gambar) {
+            if (Array.isArray(item.gambar)) {
+              coverImg = item.gambar[0] || '';
+            } else if (typeof item.gambar === 'string') {
+              try {
+                var parsed = JSON.parse(item.gambar);
+                coverImg = Array.isArray(parsed) ? (parsed[0] || '') : item.gambar;
+              } catch(e) {
+                coverImg = item.gambar;
+              }
+            }
+          }
+          return {
+            id: item.id || '',
+            judul: item.judul || 'Tanpa Judul',
+            slug: item.slug || ('artikel-' + item.id),
+            konten: item.konten ? item.konten.toString().substring(0, 200) : '',
+            gambar: coverImg ? [coverImg] : [],
+            created_at: item.created_at || ''
+          };
+        });
+      }
+    } catch(e) {
+      Logger.log("Error artikels: " + e.message);
+    }
+
+    if (artikelsList.length === 0) {
+      artikelsList = [
+        { id: 1, judul: 'Panduan Pembelajaran Daring', slug: 'panduan-pembelajaran-daring', konten: 'Berikut adalah panduan lengkap untuk...', gambar: [], created_at: '2026-08-14' },
+        { id: 2, judul: 'Jadwal Ujian Semester Ganjil', slug: 'jadwal-ujian-semester-ganjil', konten: 'Ujian semester ganjil akan dilaksanakan...', gambar: [], created_at: '2026-08-12' },
+        { id: 3, judul: 'Lomba Desain Web Nasional', slug: 'lomba-desain-web-nasional', konten: 'Pendaftaran lomba desain web telah dibuka...', gambar: [], created_at: '2026-08-10' }
       ];
     }
-    template.artikelsJSON = JSON.stringify(artikels.slice(0, 3));
-    
-    // Testimoni (Mock data jika kosong)
-    const komentars = [
-      { isi_komentar: "Aplikasi ini sangat membantu proses belajar!", is_anonim: false, user_name: "Budi", created_at: "2 hari lalu" },
-      { isi_komentar: "Tampilannya sangat bagus dan mudah dipahami.", is_anonim: true, user_name: "Anonim", created_at: "1 minggu lalu" }
-    ];
-    template.komentarsJSON = JSON.stringify(komentars);
+
+    try {
+      let rawKomentars = Database.table('komentars').get() || [];
+      if (rawKomentars.length > 0) {
+        komentarsList = rawKomentars.slice(0, 10).map(function(k) {
+          return {
+            isi_komentar: k.komentar || k.isi_komentar || '',
+            is_anonim: k.is_anonim === true || k.is_anonim === 'true' || k.is_anonim === 1 || k.is_anonim === '1',
+            user_name: k.user_name || 'Siswa',
+            created_at: k.created_at || ''
+          };
+        });
+      }
+    } catch(e) {}
+
+    if (komentarsList.length === 0) {
+      komentarsList = [
+        { isi_komentar: "Aplikasi ini sangat membantu proses belajar!", is_anonim: false, user_name: "Budi", created_at: "2 hari lalu" },
+        { isi_komentar: "Tampilannya sangat bagus dan mudah dipahami.", is_anonim: true, user_name: "Anonim", created_at: "1 minggu lalu" }
+      ];
+    }
+
+    template.statsJSON = JSON.stringify(stats);
+    template.artikelsJSON = JSON.stringify(artikelsList);
+    template.komentarsJSON = JSON.stringify(komentarsList);
   }
   
   return template.evaluate()
@@ -107,6 +167,10 @@ function login(data) {
 
 function getGuruDashboardStats(token) {
   return DashboardService.getGuruStats(token);
+}
+
+function getSiswaDashboard(token) {
+  return DashboardService.getSiswaDashboard(token);
 }
 
 // ==========================================
@@ -228,3 +292,148 @@ function destroyNilaiByBab(token, bab) {
 function updateKkm(token, kkm) {
   return GuruNilaiService.updateKkm(token, kkm);
 }
+
+// ==========================================
+// ARTIKEL SERVICE RPC (FASE ARTIKEL)
+// ==========================================
+
+function getArtikelInit(token) {
+  return ArtikelService.getArtikelInit(token);
+}
+
+function getArtikelPublic(page, perPage, search) {
+  return ArtikelService.getArtikelPublic(page, perPage, search);
+}
+
+function getArtikelDetail(slugOrId) {
+  return ArtikelService.getArtikelDetail(slugOrId);
+}
+
+function storeArtikel(token, payload) {
+  return ArtikelService.storeArtikel(token, payload);
+}
+
+function updateArtikel(token, id, payload) {
+  return ArtikelService.updateArtikel(token, id, payload);
+}
+
+function destroyArtikel(token, id) {
+  return ArtikelService.destroyArtikel(token, id);
+}
+
+// ==========================================
+// UJIAN HARIAN & HASIL UJIAN SERVICE RPC
+// ==========================================
+
+function getUjianInit(token, statusFilter) {
+  return UjianService.getUjianInit(token, statusFilter);
+}
+
+function getUjianDetail(token, id) {
+  return UjianService.getUjianDetail(token, id);
+}
+
+function storeUjian(token, payload) {
+  return UjianService.storeUjian(token, payload);
+}
+
+function saveSettingUjian(token, id, payload) {
+  return UjianService.saveSettingUjian(token, id, payload);
+}
+
+function destroyUjian(token, id) {
+  return UjianService.destroyUjian(token, id);
+}
+
+function storeSoal(token, ujianId, payload) {
+  return UjianService.storeSoal(token, ujianId, payload);
+}
+
+function updateSoal(token, ujianId, soalId, payload) {
+  return UjianService.updateSoal(token, ujianId, soalId, payload);
+}
+
+function destroySoal(token, ujianId, soalId) {
+  return UjianService.destroySoal(token, ujianId, soalId);
+}
+
+function activateUjian(token, id) {
+  return UjianService.activateUjian(token, id);
+}
+
+function finishUjian(token, id) {
+  return UjianService.finishUjian(token, id);
+}
+
+function getMonitoringData(token, id) {
+  return UjianService.getMonitoringData(token, id);
+}
+
+function getKoreksiData(token, id) {
+  return UjianService.getKoreksiData(token, id);
+}
+
+function storeKoreksiEssay(token, id, payload) {
+  return UjianService.storeKoreksiEssay(token, id, payload);
+}
+
+function finalisasiUjian(token, id) {
+  return UjianService.finalisasiUjian(token, id);
+}
+
+function getHasilUjianList(token, statusFilter) {
+  return UjianService.getHasilUjianList(token, statusFilter);
+}
+
+function getHasilUjianDetail(token, id, kelasId) {
+  return UjianService.getHasilUjianDetail(token, id, kelasId);
+}
+
+function getDetailJawabanSiswa(token, id, siswaId) {
+  return UjianService.getDetailJawabanSiswa(token, id, siswaId);
+}
+
+function updateNilaiSiswaIndividu(token, id, siswaId, payload) {
+  return UjianService.updateNilaiSiswaIndividu(token, id, siswaId, payload);
+}
+
+// ==========================================
+// SISWA SERVICE & CBT SISWA RPC
+// ==========================================
+
+function updateProfilSiswa(token, payload) {
+  return SiswaService.updateProfil(token, payload);
+}
+
+function storeKomentarSiswa(token, payload) {
+  return SiswaService.storeKomentar(token, payload);
+}
+
+function getKehadiranSaya(token) {
+  return SiswaService.getKehadiranSaya(token);
+}
+
+function getUjianSiswaList(token) {
+  return SiswaService.getUjianSiswaList(token);
+}
+
+function masukUjianSiswa(token, ujianId, tokenMasuk) {
+  return UjianSiswaService.masukUjian(token, ujianId, tokenMasuk);
+}
+
+function getSoalUjianSiswa(token, ujianId) {
+  return UjianSiswaService.getSoalUjian(token, ujianId);
+}
+
+function simpanJawabanSiswa(token, ujianId, jawabanPayload) {
+  return UjianSiswaService.saveAnswer(token, ujianId, jawabanPayload);
+}
+
+function submitUjianSiswa(token, ujianId, jawabanPayload) {
+  return UjianSiswaService.submitUjian(token, ujianId, jawabanPayload);
+}
+
+function logKecuranganUjian(token, ujianId, event, detail) {
+  return UjianSiswaService.logKecurangan(token, ujianId, event, detail);
+}
+

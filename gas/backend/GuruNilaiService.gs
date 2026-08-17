@@ -252,6 +252,25 @@ var GuruNilaiService = {
 
         var now = new Date().toISOString();
         
+        // Pastikan kolom baru untuk FASE 6F ada di Spreadsheet
+        try {
+            var sheet = Database.getSpreadsheet().getSheetByName('nilais');
+            if (sheet) {
+                var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+                var requiredCols = ['tugas', 'quiz', 'proyek', 'ulangan', 'nilai_akhir'];
+                var appended = false;
+                requiredCols.forEach(function(col) {
+                    if (headers.indexOf(col) === -1) {
+                        headers.push(col);
+                        appended = true;
+                    }
+                });
+                if (appended) {
+                    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+                }
+            }
+        } catch(e) {}
+
         Database.transaction(function() {
             var existingNilais = Database.table('nilais').get() || [];
             
@@ -345,6 +364,25 @@ var GuruNilaiService = {
         if (sertakan_ulangan) {
             nilai_akhir += (ulangan * p_ulangan);
         }
+
+        // Pastikan kolom baru untuk FASE 6F ada di Spreadsheet
+        try {
+            var sheet = Database.getSpreadsheet().getSheetByName('nilais');
+            if (sheet) {
+                var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+                var requiredCols = ['tugas', 'quiz', 'proyek', 'ulangan', 'nilai_akhir'];
+                var appended = false;
+                requiredCols.forEach(function(col) {
+                    if (headers.indexOf(col) === -1) {
+                        headers.push(col);
+                        appended = true;
+                    }
+                });
+                if (appended) {
+                    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+                }
+            }
+        } catch(e) {}
 
         var dataToSave = {
             bab: bab,

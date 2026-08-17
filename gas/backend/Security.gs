@@ -27,11 +27,23 @@ const Security = {
   },
   
   /**
-   * Memeriksa kecocokan password (Emulasi Hash::check Laravel)
+   * Memeriksa kecocokan password (Mendukung Plain-Text/NIS maupun Hashing SHA-256)
    */
   checkPassword: function(plainText, hashedPassword) {
-    const calculatedHash = this.hashPassword(plainText);
-    return calculatedHash === hashedPassword;
+    if (hashedPassword === undefined || hashedPassword === null || plainText === undefined || plainText === null) {
+      return false;
+    }
+    const plainStr = String(plainText).trim();
+    const storedStr = String(hashedPassword).trim();
+
+    // 1. Direct match (plain-text / NIS numeric)
+    if (plainStr === storedStr) return true;
+
+    // 2. SHA-256 with salt match
+    const calculatedHash = this.hashPassword(plainStr);
+    if (calculatedHash === storedStr) return true;
+
+    return false;
   },
   
   /**
