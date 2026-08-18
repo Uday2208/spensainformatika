@@ -62,8 +62,10 @@
         "SESSION_DRIVER": "database",
         "SESSION_LIFETIME": "120",
         "SESSION_EXPIRE_ON_CLOSE": "false",
-        "SESSION_COOKIE": "spensa_session",
         "SESSION_SECURE_COOKIE": "true",
+        "SESSION_SAME_SITE": "lax",
+        "BCRYPT_ROUNDS": "12",
+        "HASH_DRIVER": "bcrypt",
         "QUEUE_CONNECTION": "sync",
         "BROADCAST_CONNECTION": "log",
         "LOG_CHANNEL": "stderr"
