@@ -15,8 +15,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // XAMPP serves from project root (not public/), so override public_path
-        $this->app->usePublicPath($this->app->basePath());
+        // XAMPP serves from project root (not public/), so override public_path on local only
+        if (!isset($_SERVER['VERCEL']) && !isset($_ENV['VERCEL']) && !getenv('VERCEL')) {
+            $this->app->usePublicPath($this->app->basePath());
+        }
     }
 
     /**

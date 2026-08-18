@@ -42,7 +42,7 @@
         "APP_NAME": "SPENSA",
         "APP_ENV": "production",
         "APP_KEY": "base64:XxHGGKj0zKysGamSoF+zQmRiVIdFT2q27t3FzKT5ydc=",
-        "APP_DEBUG": "false",
+        "APP_DEBUG": "true",
         "APP_URL": "https://spensa1.vercel.app",
         "LARAVEL_STORAGE_PATH": "/tmp/storage",
         "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
