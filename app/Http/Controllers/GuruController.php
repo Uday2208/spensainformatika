@@ -989,9 +989,31 @@ class GuruController extends Controller
             });
         }
         
+        // Ringkasan Agregat Statistik untuk Kelas/Filter yang dipilih
+        $allSiswasQuery = clone $query;
+        $allSiswas = $allSiswasQuery->get();
+        
+        $totalHadir = $allSiswas->sum('hadir_count');
+        $totalSakit = $allSiswas->sum('sakit_count');
+        $totalIzin = $allSiswas->sum('izin_count');
+        $totalDispen = $allSiswas->sum('dispen_count');
+        $totalAlpha = $allSiswas->sum('alpha_count');
+        $grandTotal = $totalHadir + $totalSakit + $totalIzin + $totalDispen + $totalAlpha;
+        $avgKehadiran = $grandTotal > 0 ? round(($totalHadir / $grandTotal) * 100, 1) : 0;
+
+        $stats = [
+            'total_siswa' => $allSiswas->count(),
+            'total_hadir' => $totalHadir,
+            'total_sakit' => $totalSakit,
+            'total_izin' => $totalIzin,
+            'total_dispen' => $totalDispen,
+            'total_alpha' => $totalAlpha,
+            'avg_kehadiran' => $avgKehadiran,
+        ];
+        
         $siswas = $query->paginate(25)->withQueryString();
 
-        return view('guru.rekap-absensi', compact('kelas', 'kelas_id', 'nama_siswa', 'siswas'));
+        return view('guru.rekap-absensi', compact('kelas', 'kelas_id', 'nama_siswa', 'siswas', 'stats'));
     }
 
     public function exportRekapAbsensi(Request $request)
