@@ -42,8 +42,9 @@
         "APP_NAME": "SPENSA",
         "APP_ENV": "production",
         "APP_KEY": "base64:XxHGGKj0zKysGamSoF+zQmRiVIdFT2q27t3FzKT5ydc=",
-        "APP_DEBUG": "true",
-        "APP_URL": "https://spensa1.vercel.app",
+        "APP_DEBUG": "false",
+        "APP_URL": "https://spensainformatika.vercel.app",
+        "APP_MAINTENANCE_DRIVER": "file",
         "LARAVEL_STORAGE_PATH": "/tmp/storage",
         "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
         "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
@@ -60,6 +61,8 @@
         "CACHE_STORE": "array",
         "SESSION_DRIVER": "cookie",
         "SESSION_SECURE_COOKIE": "true",
+        "QUEUE_CONNECTION": "sync",
+        "BROADCAST_CONNECTION": "log",
         "LOG_CHANNEL": "stderr"
     }
 }
