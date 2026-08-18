@@ -281,10 +281,18 @@ class GuruController extends Controller
             ->unique()
             ->values();
         
+        $babSudahAdaPerKelas = Nilai::join('siswas', 'nilais.siswa_id', '=', 'siswas.id')
+            ->select('siswas.kelas_id', 'nilais.bab')
+            ->distinct()
+            ->get()
+            ->groupBy('kelas_id')
+            ->map(fn($items) => $items->pluck('bab')->values()->all())
+            ->toArray();
+
         $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
         $kkm = $kkmSetting ? $kkmSetting->value : 75;
-        
-        return view('guru.nilai', compact('kelas', 'siswas', 'riwayat_nilai', 'daftar_bab', 'kkm'));
+
+        return view('guru.nilai', compact('kelas', 'siswas', 'riwayat_nilai', 'daftar_bab', 'kkm', 'babSudahAdaPerKelas'));
     }
 
     public function getRataUjian(Request $request)
@@ -372,6 +380,19 @@ class GuruController extends Controller
         $p_ulangan = $p_ulangan_raw / 100;
 
         $siswaIds = array_keys($request->nilai);
+        $babReq = trim($request->bab);
+        $isForceUpdate = $request->boolean('force_update') || $request->input('mode') === 'update';
+
+        // Check if grades already exist for this class and bab
+        $sudahAda = Nilai::whereIn('siswa_id', $siswaIds)
+            ->where('bab', $babReq)
+            ->exists();
+
+        if ($sudahAda && !$isForceUpdate) {
+            return back()->withInput()->withErrors([
+                'Nilai untuk Bab "' . $babReq . '" pada kelas ini sudah pernah diinput. Silakan klik tombol "Muat Data" atau gunakan tab "Riwayat & Edit Nilai" jika ingin memperbarui nilai.'
+            ]);
+        }
 
         // Pre-calculate rata_harian for these students
         $rataHarianMap = \App\Models\PenilaianHarian::whereIn('siswa_id', $siswaIds)
@@ -381,7 +402,6 @@ class GuruController extends Controller
             ->toArray();
 
         // Pre-calculate rata_ulangan
-        $babReq = trim($request->bab);
         $rataUlanganMap = [];
         
         if (Schema::hasTable('hasil_ujians') && Schema::hasTable('ujians')) {

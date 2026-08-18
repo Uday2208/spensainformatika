@@ -9,6 +9,20 @@
 </div>
 @endif
 
+@if($errors->any())
+<div class="mb-4 bg-red-100 text-red-800 p-3.5 rounded text-sm border border-red-200 shadow-sm">
+    <div class="font-bold mb-1 flex items-center gap-1.5">
+        <svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        Pemberitahuan:
+    </div>
+    <ul class="list-disc list-inside space-y-0.5 text-xs text-red-700">
+        @foreach($errors->all() as $error)
+            <li>{{ $error }}</li>
+        @endforeach
+    </ul>
+</div>
+@endif
+
 <div x-data="{ tab: 'input', pHarian: 20, pTugas: 20, pQuiz: 20, pProyek: 20, pUlangan: 20, useHarian: true, useTugas: true, useQuiz: true, useProyek: true, editModalOpen: false, kkmModalOpen: false, editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }, sertakanUlangan: false, rataUjian: {} }">
     
     <!-- Tabs -->
@@ -36,6 +50,7 @@
     <div x-show="tab === 'input'" class="bg-white rounded-b rounded-tr border border-slate-200 shadow-sm p-4">
     <form action="{{ url('/app/nilai') }}" method="POST" id="nilaiForm">
         @csrf
+        <input type="hidden" name="force_update" id="inputForceUpdate" value="0">
         
         <!-- Controls -->
         <div class="flex flex-col lg:flex-row lg:items-end justify-between mb-4 pb-4 border-b border-slate-100 gap-4">
@@ -43,9 +58,10 @@
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Materi / Bab</label>
                     <div class="flex items-center space-x-2">
-                        <input type="text" name="bab" id="inputBabUtama" list="daftarBabList" required placeholder="Contoh: Bab 1 - Aljabar" class="input-compact bg-slate-50 w-full md:w-48" onchange="enableSertakanUlanganAndFetch()" oninput="clearTimeout(window._babDebounce); if(this.value.trim() !== '') { window._babDebounce = setTimeout(function(){ enableSertakanUlanganAndFetch(); }, 700); }">
+                        <input type="text" name="bab" id="inputBabUtama" list="daftarBabList" required placeholder="Contoh: Bab 1 - Aljabar" class="input-compact bg-slate-50 w-full md:w-48" onchange="enableSertakanUlanganAndFetch(); checkBabExistsWarning();" oninput="clearTimeout(window._babDebounce); checkBabExistsWarning(); if(this.value.trim() !== '') { window._babDebounce = setTimeout(function(){ enableSertakanUlanganAndFetch(); }, 700); }">
                         <button type="button" onclick="loadExistingGrades()" class="btn-compact bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs whitespace-nowrap" title="Muat nilai sebelumnya jika bab sudah ada">Muat Data</button>
                     </div>
+                    <div id="warningBabSudahAda" class="hidden"></div>
                     <datalist id="daftarBabList">
                         @foreach($daftar_bab as $bab)
                             <option value="{{ $bab }}">
@@ -470,6 +486,37 @@
     })->values()->all();
 @endphp
     const riwayatData = @json($riwayatJsonData);
+    const babSudahAdaPerKelas = @json($babSudahAdaPerKelas ?? []);
+    const currentKelasId = {{ request('kelas_id', 0) }};
+
+    function checkBabExistsWarning() {
+        const babInput = document.getElementById('inputBabUtama')?.value?.trim() || '';
+        const warningEl = document.getElementById('warningBabSudahAda');
+        const inputForceUpdate = document.getElementById('inputForceUpdate');
+        
+        if (!warningEl) return;
+        
+        if (!babInput) {
+            warningEl.className = "hidden";
+            return;
+        }
+
+        const existingList = (babSudahAdaPerKelas[currentKelasId] || []).map(b => b.toLowerCase());
+        const isMatch = existingList.includes(babInput.toLowerCase());
+
+        if (isMatch) {
+            if (inputForceUpdate && inputForceUpdate.value === '1') {
+                warningEl.className = "mt-1.5 text-[11px] font-semibold text-blue-800 bg-blue-50 border border-blue-200 px-2.5 py-1 rounded block";
+                warningEl.innerHTML = "✏️ <strong>Mode Update Aktif:</strong> Anda sedang memperbarui nilai tersimpan untuk Bab ini.";
+            } else {
+                warningEl.className = "mt-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 border border-amber-300 px-2.5 py-1 rounded block";
+                warningEl.innerHTML = "⚠️ <strong>Nilai Bab ini sudah ada untuk kelas ini.</strong> Klik tombol <strong>Muat Data</strong> jika ingin mengedit nilai yang tersimpan.";
+            }
+        } else {
+            warningEl.className = "hidden";
+            if (inputForceUpdate) inputForceUpdate.value = '0';
+        }
+    }
 
     function fetchRataUjian(showToast = false) {
         const babInput = document.getElementById('inputBabUtama')?.value?.trim() || '';
@@ -608,7 +655,10 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(() => fetchRataUjian(false), 300);
+        setTimeout(() => {
+            fetchRataUjian(false);
+            checkBabExistsWarning();
+        }, 300);
     });
 
     function enableSertakanUlanganAndFetch(showToast = false) {
@@ -687,6 +737,10 @@
             quizInput.dispatchEvent(new Event('input'));
             proyekInput.dispatchEvent(new Event('input'));
         });
+
+        const inputForceUpdate = document.getElementById('inputForceUpdate');
+        if (inputForceUpdate) inputForceUpdate.value = '1';
+        checkBabExistsWarning();
     }
 
     function filterKelas() {
