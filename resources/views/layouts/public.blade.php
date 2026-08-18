@@ -68,7 +68,7 @@
     <!-- Footer -->
     <footer class="bg-dark text-white py-8">
         <div class="max-w-7xl mx-auto px-4 text-center">
-            <p class="text-slate-400">&copy; {{ date('Y') }} Wahyu Heryanto, S.Kom. All rights reseraved.</p>
+            <p class="text-slate-400">&copy; {{ date('Y') }} Wahyu Heryanto, S.Kom. All rights reserved.</p>
         </div>
     </footer>
 </body>
