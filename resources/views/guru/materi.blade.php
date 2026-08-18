@@ -65,7 +65,16 @@
 
     <!-- Daftar Materi -->
     <div class="lg:col-span-2">
-        <h3 class="font-bold text-slate-800 mb-4">Materi yang Telah Diunggah</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 class="font-bold text-slate-800">Materi yang Telah Diunggah</h3>
+            <form action="{{ url('/app/materi') }}" method="GET" class="flex gap-2">
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari judul materi..." class="input-compact bg-white text-xs w-48 sm:w-64 border-slate-300 rounded shadow-sm">
+                <button type="submit" class="btn-compact bg-slate-800 text-white text-xs px-3 py-1.5 rounded hover:bg-slate-700">Cari</button>
+                @if(request('search'))
+                    <a href="{{ url('/app/materi') }}" class="btn-compact bg-slate-200 text-slate-700 text-xs px-2.5 py-1.5 rounded hover:bg-slate-300 flex items-center">Reset</a>
+                @endif
+            </form>
+        </div>
         
         @if($materis->isEmpty())
         <div class="bg-white rounded border border-dashed border-slate-300 p-8 text-center shadow-sm">

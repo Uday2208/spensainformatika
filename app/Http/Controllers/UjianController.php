@@ -495,20 +495,35 @@ class UjianController extends Controller
             }
         }
 
-        $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
-        $kkm = $kkmSetting ? $kkmSetting->value : 75;
-
-        // Simpan nilai_akhir ke tabel nilais (kolom ulangan) – updateOrCreate agar tidak duplikat
+        // Simpan nilai_akhir ke tabel nilais (kolom ulangan) – Batch upsert agar efisien dan bebas N+1 query
         DB::beginTransaction();
         try {
-            $savedCount = 0;
-            foreach (HasilUjian::where('ujian_id', $id)->where('status', 'dinilai')->get() as $hasil) {
-                Nilai::updateOrCreate(
-                    ['siswa_id' => $hasil->siswa_id, 'bab' => $ujian->bab],
-                    ['ulangan' => $hasil->nilai_akhir]
-                );
-                $savedCount++;
+            $hasilList = HasilUjian::where('ujian_id', $id)
+                ->where('status', 'dinilai')
+                ->get();
+
+            $now = now();
+            $upsertData = [];
+
+            foreach ($hasilList as $hasil) {
+                $upsertData[] = [
+                    'siswa_id'   => $hasil->siswa_id,
+                    'bab'        => $ujian->bab,
+                    'ulangan'    => $hasil->nilai_akhir,
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
             }
+
+            if (!empty($upsertData)) {
+                Nilai::upsert(
+                    $upsertData,
+                    ['siswa_id', 'bab'], // Unique composite index
+                    ['ulangan', 'updated_at']
+                );
+            }
+
+            $savedCount = count($upsertData);
 
             DB::commit();
             return back()->with('success', "Nilai ujian telah difinalisasi! $savedCount nilai ulangan berhasil disimpan ke rekap nilai.");

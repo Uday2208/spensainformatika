@@ -54,6 +54,7 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/penilaian-harian', [GuruController::class, 'penilaianHarian']);
         Route::post('/penilaian-harian', [GuruController::class, 'storePenilaianHarian']);
         Route::get('/nilai', [GuruController::class, 'nilai']);
+        Route::get('/nilai/export', [GuruController::class, 'exportNilai'])->name('guru.nilai.export');
         Route::get('/nilai/rata-ujian', [GuruController::class, 'getRataUjian'])->name('guru.nilai.rata-ujian');
         Route::post('/nilai', [GuruController::class, 'storeNilai']);
         Route::put('/nilai/{id}', [GuruController::class, 'updateNilai']);

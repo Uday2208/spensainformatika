@@ -9,7 +9,11 @@ class Komentar extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'siswa_id',
+        'isi_komentar',
+        'is_anonim',
+    ];
 
     public function siswa()
     {

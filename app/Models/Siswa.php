@@ -9,7 +9,11 @@ class Siswa extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id',
+        'kelas_id',
+        'nis',
+    ];
 
     public function user()
     {

@@ -35,6 +35,7 @@ Thumbs.db
 
 # Files that should not be in repo
 composer.phar
+*.zip
 /database/database.sqlite
 /database/hosting_backup
 /_backup

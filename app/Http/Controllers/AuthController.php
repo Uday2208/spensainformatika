@@ -61,11 +61,12 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($request->hasFile('avatar')) {
-            $file = $request->file('avatar');
-            $mime = $file->getMimeType();
-            $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
+            // Delete old avatar file if not a base64 string
+            if ($user->avatar && !str_starts_with($user->avatar, 'data:image')) {
+                \App\Services\FileStorageService::delete($user->avatar, 'avatars');
+            }
 
-            $user->avatar = $base64;
+            $user->avatar = \App\Services\FileStorageService::upload($request->file('avatar'), 'avatars');
             $user->save();
         }
 

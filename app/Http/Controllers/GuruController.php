@@ -571,6 +571,57 @@ class GuruController extends Controller
         return back()->with('success', 'Data nilai berhasil dihapus!');
     }
 
+    public function exportNilai(Request $request)
+    {
+        $kelas_id = $request->kelas_id;
+        if (!$kelas_id) {
+            return back()->withErrors(['Pilih kelas terlebih dahulu untuk mengekspor nilai!']);
+        }
+
+        $kelas = Kelas::findOrFail($kelas_id);
+        $siswas = Siswa::where('kelas_id', $kelas_id)->with(['user', 'nilais'])->get();
+        $daftarBab = Nilai::whereIn('siswa_id', $siswas->pluck('id'))->pluck('bab')->unique()->values()->all();
+
+        $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
+        $kkm = $kkmSetting ? (float)$kkmSetting->value : 75.0;
+
+        $filename = "rekap_nilai_" . str_replace(' ', '_', $kelas->nama_kelas) . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($siswas, $daftarBab, $kkm) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
+
+            $columns = array_merge(['No', 'NIS', 'Nama Lengkap'], $daftarBab, ['Rata-rata Rapor', 'Status']);
+            fputcsv($file, $columns, ';');
+
+            foreach ($siswas as $index => $siswa) {
+                $nilaiMap = $siswa->nilais->pluck('nilai_akhir', 'bab')->toArray();
+                $row = [$index + 1, $siswa->nis, $siswa->user->name ?? '-'];
+
+                foreach ($daftarBab as $bab) {
+                    $row[] = isset($nilaiMap[$bab]) ? $nilaiMap[$bab] : '-';
+                }
+
+                $totalBab = $siswa->nilais->count();
+                $rataRata = $totalBab > 0 ? round($siswa->nilais->avg('nilai_akhir'), 1) : 0;
+                $row[] = $totalBab > 0 ? $rataRata : '-';
+                $row[] = $totalBab > 0 ? ($rataRata >= $kkm ? 'TUNTAS' : 'BELUM TUNTAS') : 'BELUM DINILAI';
+
+                fputcsv($file, $row, ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function destroyNilaiByBab(Request $request)
     {
         $request->validate([
@@ -1048,9 +1099,19 @@ class GuruController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function materi()
+    public function materi(Request $request)
     {
-        $materis = Materi::latest()->paginate(20);
+        $query = Materi::latest();
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+            });
+        }
+
+        $materis = $query->paginate(20)->withQueryString();
         return view('guru.materi', compact('materis'));
     }
 
@@ -1067,17 +1128,11 @@ class GuruController extends Controller
         $data = $request->only(['judul', 'deskripsi', 'link']);
 
         if ($request->hasFile('foto')) {
-            $foto = $request->file('foto');
-            $fotoName = time() . '_foto_' . $foto->getClientOriginalName();
-            $foto->move(public_path('uploads/materi'), $fotoName);
-            $data['foto'] = $fotoName;
+            $data['foto'] = \App\Services\FileStorageService::upload($request->file('foto'), 'materi');
         }
 
         if ($request->hasFile('file_materi')) {
-            $file = $request->file('file_materi');
-            $fileName = time() . '_file_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/materi'), $fileName);
-            $data['file_materi'] = $fileName;
+            $data['file_materi'] = \App\Services\FileStorageService::upload($request->file('file_materi'), 'materi');
         }
 
         Materi::create($data);
@@ -1090,13 +1145,11 @@ class GuruController extends Controller
         $materi = Materi::findOrFail($id);
 
         if ($materi->foto) {
-            $fotoPath = public_path('uploads/materi/' . $materi->foto);
-            if (File::exists($fotoPath)) File::delete($fotoPath);
+            \App\Services\FileStorageService::delete($materi->foto, 'materi');
         }
 
         if ($materi->file_materi) {
-            $filePath = public_path('uploads/materi/' . $materi->file_materi);
-            if (File::exists($filePath)) File::delete($filePath);
+            \App\Services\FileStorageService::delete($materi->file_materi, 'materi');
         }
 
         $materi->delete();
@@ -1126,15 +1179,8 @@ class GuruController extends Controller
 
         $uploadedImages = [];
         if ($request->hasFile('gambar')) {
-            $uploadDir = public_path('uploads/artikel');
-            if (!File::exists($uploadDir)) {
-                File::makeDirectory($uploadDir, 0755, true, true);
-            }
-
             foreach ($request->file('gambar') as $file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move($uploadDir, $filename);
-                $uploadedImages[] = $filename;
+                $uploadedImages[] = \App\Services\FileStorageService::upload($file, 'artikel');
             }
         }
 
@@ -1164,26 +1210,16 @@ class GuruController extends Controller
         $artikel->konten = $request->konten;
 
         if ($request->hasFile('gambar')) {
-            $uploadDir = public_path('uploads/artikel');
-            if (!File::exists($uploadDir)) {
-                File::makeDirectory($uploadDir, 0755, true, true);
-            }
-
             // Hapus gambar lama jika ada
             if ($artikel->gambar && is_array($artikel->gambar)) {
                 foreach ($artikel->gambar as $img) {
-                    $imgPath = $uploadDir . '/' . $img;
-                    if (File::exists($imgPath)) {
-                        File::delete($imgPath);
-                    }
+                    \App\Services\FileStorageService::delete($img, 'artikel');
                 }
             }
 
             $uploadedImages = [];
             foreach ($request->file('gambar') as $file) {
-                $filename = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move($uploadDir, $filename);
-                $uploadedImages[] = $filename;
+                $uploadedImages[] = \App\Services\FileStorageService::upload($file, 'artikel');
             }
 
             $artikel->gambar = $uploadedImages;
@@ -1200,8 +1236,7 @@ class GuruController extends Controller
 
         if ($artikel->gambar && is_array($artikel->gambar)) {
             foreach ($artikel->gambar as $img) {
-                $path = public_path('uploads/artikel/' . $img);
-                if (File::exists($path)) File::delete($path);
+                \App\Services\FileStorageService::delete($img, 'artikel');
             }
         }
 
@@ -1225,13 +1260,16 @@ class GuruController extends Controller
         ]);
 
         if ($request->hasFile('app_logo')) {
-            $logo = $request->file('app_logo');
-            $mime = $logo->getMimeType();
-            $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logo->getRealPath()));
+            $oldLogo = \App\Models\Setting::where('key', 'app_logo')->first();
+            if ($oldLogo && $oldLogo->value && !str_starts_with($oldLogo->value, 'data:image')) {
+                \App\Services\FileStorageService::delete($oldLogo->value, 'logo');
+            }
+
+            $logoFileName = \App\Services\FileStorageService::upload($request->file('app_logo'), 'logo');
 
             \App\Models\Setting::updateOrCreate(
                 ['key' => 'app_logo'],
-                ['value' => $base64]
+                ['value' => $logoFileName]
             );
             \Illuminate\Support\Facades\Cache::forget('app_settings');
         }

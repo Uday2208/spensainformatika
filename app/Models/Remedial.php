@@ -9,7 +9,10 @@ class Remedial extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'nilai_id',
+        'nilai_remedial',
+    ];
 
     public function nilai()
     {

@@ -9,7 +9,15 @@ class Nilai extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'siswa_id',
+        'bab',
+        'tugas',
+        'quiz',
+        'proyek',
+        'ulangan',
+        'nilai_akhir',
+    ];
 
     public function siswa()
     {

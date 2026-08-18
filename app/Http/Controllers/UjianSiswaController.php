@@ -205,14 +205,30 @@ class UjianSiswaController extends Controller
 
             $soalIds = Soal::where('ujian_id', $id)->pluck('id')->toArray();
             
+            $now = now();
+            $batchJawaban = [];
+
             foreach ($jawabanPayload as $soalId => $jawaban) {
                 if (in_array($soalId, $soalIds)) {
-                    JawabanSiswa::updateOrCreate(
-                        ['siswa_id' => $siswa->id, 'soal_id' => $soalId],
-                        ['ujian_id' => $id, 'jawaban' => $jawaban, 'updated_at' => now()]
-                    );
+                    $batchJawaban[] = [
+                        'siswa_id'   => $siswa->id,
+                        'soal_id'    => $soalId,
+                        'ujian_id'   => $id,
+                        'jawaban'    => $jawaban,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
                 }
             }
+
+            if (!empty($batchJawaban)) {
+                JawabanSiswa::upsert(
+                    $batchJawaban,
+                    ['siswa_id', 'soal_id'], // Unique index
+                    ['ujian_id', 'jawaban', 'updated_at']
+                );
+            }
+
             DB::commit();
             return response()->json(['success' => true, 'saved_at' => now()->toTimeString()]);
         } catch (\Exception $e) {
@@ -254,17 +270,32 @@ class UjianSiswaController extends Controller
                 return $this->submitResponse($request, true, 'Ujian sudah dikumpulkan sebelumnya.', $id);
             }
 
-            // Simpan seluruh jawaban dari payload (termasuk yang gagal auto-save)
+            // Simpan seluruh jawaban dari payload (termasuk yang gagal auto-save) secara batch
             $jawabanPayload = $request->input('jawaban', []);
             if (is_array($jawabanPayload) && !empty($jawabanPayload)) {
                 $soalIds = $ujian->soals->pluck('id')->toArray();
+                $now = now();
+                $batchSubmitJawaban = [];
+
                 foreach ($jawabanPayload as $soalId => $jawaban) {
                     if (in_array($soalId, $soalIds)) {
-                        JawabanSiswa::updateOrCreate(
-                            ['siswa_id' => $siswa->id, 'soal_id' => $soalId],
-                            ['ujian_id' => $id, 'jawaban' => $jawaban, 'updated_at' => now()]
-                        );
+                        $batchSubmitJawaban[] = [
+                            'siswa_id'   => $siswa->id,
+                            'soal_id'    => $soalId,
+                            'ujian_id'   => $id,
+                            'jawaban'    => $jawaban,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
                     }
+                }
+
+                if (!empty($batchSubmitJawaban)) {
+                    JawabanSiswa::upsert(
+                        $batchSubmitJawaban,
+                        ['siswa_id', 'soal_id'],
+                        ['ujian_id', 'jawaban', 'updated_at']
+                    );
                 }
             }
 
