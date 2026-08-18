@@ -33,7 +33,11 @@
                 <div class="flex-shrink-0">
                     @if(!empty($settings['app_logo']))
                         <div class="w-20 h-20 rounded-lg overflow-hidden bg-white shadow-sm border border-slate-200 flex items-center justify-center p-1">
-                            <img src="{{ asset('uploads/logo/' . $settings['app_logo']) }}" class="w-full h-full object-contain">
+                            @if(str_starts_with($settings['app_logo'], 'data:image'))
+                                <img src="{{ $settings['app_logo'] }}" class="w-full h-full object-contain" alt="Logo">
+                            @else
+                                <img src="{{ asset('uploads/logo/' . $settings['app_logo']) }}" class="w-full h-full object-contain" alt="Logo" onerror="this.style.display='none'">
+                            @endif
                         </div>
                     @else
                         <div class="w-20 h-20 bg-blue-100 text-blue-500 rounded-lg flex items-center justify-center border border-blue-200 shadow-sm">

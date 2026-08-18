@@ -54,4 +54,19 @@ class User extends Authenticatable
         return $this->hasOne(Siswa::class);
     }
 
+    /**
+     * Get the avatar URL or data URI.
+     */
+    public function getAvatarUrlAttribute(): string
+    {
+        if (empty($this->avatar)) {
+            return 'https://ui-avatars.com/api/?name=' . urlencode($this->name) . '&background=1e40af&color=ffffff&bold=true';
+        }
+
+        if (str_starts_with($this->avatar, 'data:image')) {
+            return $this->avatar;
+        }
+
+        return asset('uploads/avatars/' . $this->avatar);
+    }
 }

@@ -44,7 +44,11 @@
             <div class="flex items-center gap-3">
                 @if(!empty($app_settings['app_logo']))
                     <div class="w-8 h-8 rounded-lg overflow-hidden bg-white shadow-inner flex-shrink-0 flex items-center justify-center p-0.5">
-                        <img src="{{ asset('uploads/logo/' . $app_settings['app_logo']) }}" class="w-full h-full object-contain">
+                        @if(str_starts_with($app_settings['app_logo'], 'data:image'))
+                            <img src="{{ $app_settings['app_logo'] }}" class="w-full h-full object-contain" alt="Logo">
+                        @else
+                            <img src="{{ asset('uploads/logo/' . $app_settings['app_logo']) }}" class="w-full h-full object-contain" alt="Logo" onerror="this.style.display='none'">
+                        @endif
                     </div>
                 @else
                     <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-blue-900 font-bold text-xl shadow-inner flex-shrink-0">
@@ -206,11 +210,7 @@
                 <!-- Dropdown Profile User di Navbar (Pojok Kanan Atas) -->
                 <div x-data="{ userMenuOpen: false }" class="relative">
                     <button @click="userMenuOpen = !userMenuOpen" @click.outside="userMenuOpen = false" class="flex items-center gap-2 p-1 rounded-full hover:bg-slate-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500/20">
-                        @if(Auth::user()->avatar)
-                            <img src="{{ asset('uploads/avatars/' . Auth::user()->avatar) }}?v={{ Auth::user()->updated_at?->timestamp ?? time() }}" class="w-9 h-9 rounded-full object-cover border-2 border-blue-500 shadow-sm" alt="{{ Auth::user()->name }}">
-                        @else
-                            <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name) }}&background=1e40af&color=fff" class="w-9 h-9 rounded-full object-cover border-2 border-blue-500 shadow-sm" alt="Default Avatar">
-                        @endif
+                        <img src="{{ Auth::user()->avatar_url }}" class="w-9 h-9 rounded-full object-cover border-2 border-blue-500 shadow-sm" alt="{{ Auth::user()->name }}">
                         <span class="hidden md:inline-block font-semibold text-slate-700 text-sm">{{ Auth::user()->name }}</span>
                         <svg class="w-4 h-4 text-slate-500 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -305,10 +305,7 @@
                 @csrf
                 
                 <div class="relative w-32 h-32 mx-auto group">
-                    <div class="w-full h-full rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-100 text-slate-300 flex items-center justify-center bg-cover bg-center" style="{{ auth()->user()->avatar ? 'background-image: url(' . asset('uploads/avatars/' . auth()->user()->avatar) . '?v=' . (auth()->user()->updated_at?->timestamp ?? time()) . ')' : '' }}">
-                        @if(!auth()->user()->avatar)
-                            <svg class="w-16 h-16" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-                        @endif
+                    <div class="w-full h-full rounded-full border-4 border-slate-100 shadow-md overflow-hidden bg-slate-100 text-slate-300 flex items-center justify-center bg-cover bg-center" style="background-image: url('{{ auth()->user()->avatar_url }}')">
                     </div>
                     
                     <label class="absolute inset-0 w-full h-full bg-black/50 rounded-full flex flex-col items-center justify-center text-white opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity backdrop-blur-sm">

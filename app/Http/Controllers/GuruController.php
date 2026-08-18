@@ -1206,22 +1206,14 @@ class GuruController extends Controller
 
         if ($request->hasFile('app_logo')) {
             $logo = $request->file('app_logo');
-            $logoName = 'logo_' . time() . '.' . $logo->getClientOriginalExtension();
-            $logo->move(public_path('uploads/logo'), $logoName);
-            
-            // Delete old logo
-            $oldLogo = \App\Models\Setting::where('key', 'app_logo')->first();
-            if ($oldLogo && $oldLogo->value) {
-                $oldPath = public_path('uploads/logo/' . $oldLogo->value);
-                if (\Illuminate\Support\Facades\File::exists($oldPath)) {
-                    \Illuminate\Support\Facades\File::delete($oldPath);
-                }
-            }
-            
+            $mime = $logo->getMimeType();
+            $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($logo->getRealPath()));
+
             \App\Models\Setting::updateOrCreate(
                 ['key' => 'app_logo'],
-                ['value' => $logoName]
+                ['value' => $base64]
             );
+            \Illuminate\Support\Facades\Cache::forget('app_settings');
         }
 
         if ($request->filled('app_name')) {

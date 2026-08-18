@@ -55,29 +55,20 @@ class AuthController extends Controller
     public function updateAvatar(Request $request)
     {
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048'
+            'avatar' => 'required|image|mimes:jpeg,png,jpg,webp|max:2048'
         ]);
 
         $user = Auth::user();
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
-            
-            $file->move(public_path('uploads/avatars'), $filename);
+            $mime = $file->getMimeType();
+            $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
 
-            // Delete old avatar
-            if ($user->avatar) {
-                $oldPath = public_path('uploads/avatars/' . $user->avatar);
-                if (\Illuminate\Support\Facades\File::exists($oldPath)) {
-                    \Illuminate\Support\Facades\File::delete($oldPath);
-                }
-            }
-
-            $user->avatar = $filename;
+            $user->avatar = $base64;
             $user->save();
         }
 
-        return back()->with('success', 'Foto profil berhasil diperbarui!');
+        return back()->with('success', 'Foto profil berhasil diperbarui.');
     }
 }

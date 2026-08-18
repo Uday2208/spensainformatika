@@ -22,13 +22,7 @@
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
     <!-- Identitas Siswa -->
     <div class="lg:col-span-2 bg-white rounded border border-slate-200 p-4 shadow-sm flex items-center">
-        @if(auth()->user()->avatar)
-            <img src="{{ asset('uploads/avatars/' . auth()->user()->avatar) }}?v={{ auth()->user()->updated_at?->timestamp ?? time() }}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-500 mr-4 shadow-sm flex-shrink-0" alt="{{ auth()->user()->name }}">
-        @else
-            <div class="w-16 h-16 rounded-full border border-slate-200 bg-slate-50 flex items-center justify-center text-2xl font-bold text-slate-400 mr-4 flex-shrink-0">
-                {{ substr(auth()->user()->name, 0, 1) }}
-            </div>
-        @endif
+        <img src="{{ auth()->user()->avatar_url }}" class="w-16 h-16 rounded-full object-cover border-2 border-blue-500 mr-4 shadow-sm flex-shrink-0" alt="{{ auth()->user()->name }}">
         <div>
             <h2 class="text-xl font-bold text-slate-800">{{ auth()->user()->name }}</h2>
             <div class="text-sm text-slate-600 mt-1 flex gap-4">
@@ -212,12 +206,8 @@
             <div>
                 <label class="block text-xs font-semibold text-slate-600 mb-2">Foto Profil Siswa</label>
                 <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 rounded-full border-2 border-blue-500 overflow-hidden bg-slate-100 flex items-center justify-center text-xl font-bold text-slate-400 flex-shrink-0 shadow-sm">
-                        @if(auth()->user()->avatar)
-                            <img src="{{ asset('uploads/avatars/' . auth()->user()->avatar) }}?v={{ auth()->user()->updated_at?->timestamp ?? time() }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
-                        @else
-                            {{ substr(auth()->user()->name, 0, 1) }}
-                        @endif
+                    <div class="w-16 h-16 rounded-full border-2 border-blue-500 overflow-hidden bg-slate-100 flex items-center justify-center flex-shrink-0 shadow-sm">
+                        <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
                     </div>
                     <div class="flex-1">
                         <input type="file" name="avatar" accept=".jpg,.jpeg,.png" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded p-1 bg-slate-50">

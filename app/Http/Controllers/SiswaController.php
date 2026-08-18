@@ -90,19 +90,10 @@ class SiswaController extends Controller
 
         if ($request->hasFile('avatar')) {
             $file = $request->file('avatar');
-            $filename = 'avatar_' . $user->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $mime = $file->getMimeType();
+            $base64 = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
 
-            $file->move(public_path('uploads/avatars'), $filename);
-
-            // Delete old avatar
-            if ($user->avatar) {
-                $oldPath = public_path('uploads/avatars/' . $user->avatar);
-                if (\Illuminate\Support\Facades\File::exists($oldPath)) {
-                    \Illuminate\Support\Facades\File::delete($oldPath);
-                }
-            }
-
-            $dataToUpdate['avatar'] = $filename;
+            $dataToUpdate['avatar'] = $base64;
         }
 
         $user->update($dataToUpdate);

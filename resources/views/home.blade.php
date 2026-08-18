@@ -130,8 +130,8 @@
                     </div>
                     <div class="flex items-center gap-4 mt-auto">
                         <div class="w-12 h-12 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xl border-2 border-white shadow-sm overflow-hidden flex-shrink-0">
-                            @if(!$komentar->is_anonim && isset($komentar->siswa->user->avatar) && $komentar->siswa->user->avatar)
-                                <img src="{{ asset('uploads/avatars/' . $komentar->siswa->user->avatar) }}" class="w-full h-full object-cover" alt="{{ $komentar->siswa->user->name }}">
+                            @if(!$komentar->is_anonim && isset($komentar->siswa->user))
+                                <img src="{{ $komentar->siswa->user->avatar_url }}" class="w-full h-full object-cover" alt="{{ $komentar->siswa->user->name }}">
                             @else
                                 {{ $komentar->is_anonim ? 'A' : substr($komentar->siswa->user->name ?? 'A', 0, 1) }}
                             @endif
