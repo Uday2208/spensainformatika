@@ -37,7 +37,7 @@
 
     <!-- Sidebar -->
     <div :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'" 
-         class="fixed inset-y-0 left-0 z-50 w-[260px] bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:flex lg:h-screen lg:w-[260px] lg:flex-col shadow-2xl">
+         class="fixed inset-y-0 left-0 z-50 w-[270px] flex flex-col h-full bg-gradient-to-b from-blue-900 to-blue-800 text-white transform transition-transform duration-300 ease-in-out lg:translate-x-0 lg:static lg:inset-auto lg:flex lg:h-screen lg:w-[260px] lg:flex-col shadow-2xl">
         
         <!-- Sidebar Header -->
         <div class="flex items-center justify-between h-[60px] px-6 bg-blue-950/30 border-b border-blue-800/50">
@@ -67,7 +67,7 @@
         </div>
 
         <!-- Sidebar Navigation -->
-        <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-6 sidebar-scroll">
+        <nav class="flex-1 overflow-y-auto overscroll-contain touch-pan-y py-4 px-3 space-y-6 sidebar-scroll pb-24">
             
             @if(auth()->user()->role == 'guru')
             <!-- Menu Utama -->
@@ -265,8 +265,8 @@
         </header>
 
         <!-- Main Scrollable Content -->
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-slate-50 p-4 sm:p-6 lg:p-8 scroll-smooth">
-            <div class="max-w-7xl mx-auto pb-10">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto overscroll-contain touch-pan-y bg-slate-50 p-4 sm:p-6 lg:p-8 scroll-smooth">
+            <div class="max-w-7xl mx-auto pb-16">
                 @yield('content')
             </div>
         </main>
