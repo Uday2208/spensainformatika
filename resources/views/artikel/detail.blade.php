@@ -112,7 +112,7 @@
                             <a href="{{ route('artikel.show', $item->slug) }}" class="group flex gap-4 items-center p-2 rounded-xl hover:bg-slate-50 transition-colors">
                                 <div class="w-20 h-20 rounded-xl overflow-hidden bg-slate-100 flex-shrink-0 relative">
                                     @if($item->gambar && is_array($item->gambar) && count($item->gambar) > 0)
-                                        <img src="{{ asset('uploads/artikel/' . $item->gambar[0]) }}" alt="{{ $item->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                                        <img src="{{ \App\Services\FileStorageService::url($item->gambar[0], 'artikel') }}" alt="{{ $item->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                     @else
                                         <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=300&q=80" alt="{{ $item->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                                     @endif
