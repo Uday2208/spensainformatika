@@ -17,13 +17,13 @@ class FileStorageService
     {
         $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
         
-        $disk = config('filesystems.default', 'public');
+        $disk = config('filesystems.default') ?: 'public';
 
-        if ($disk === 'public' || $disk === 'local') {
+        if (empty($disk) || $disk === 'public' || $disk === 'local' || !config()->has("filesystems.disks.{$disk}")) {
             // Ensure local directory exists in public/uploads for fallback compatibility
             $publicDir = public_path("uploads/{$directory}");
             if (!File::exists($publicDir)) {
-                File::makeDirectory($publicDir, 0755, true, true);
+                @File::makeDirectory($publicDir, 0755, true, true);
             }
             $file->move($publicDir, $filename);
             
@@ -50,12 +50,12 @@ class FileStorageService
             return false;
         }
 
-        $disk = config('filesystems.default', 'public');
+        $disk = config('filesystems.default') ?: 'public';
 
-        if ($disk === 'public' || $disk === 'local') {
+        if (empty($disk) || $disk === 'public' || $disk === 'local' || !config()->has("filesystems.disks.{$disk}")) {
             $publicPath = public_path("uploads/{$directory}/" . $filename);
             if (File::exists($publicPath)) {
-                File::delete($publicPath);
+                @File::delete($publicPath);
             }
 
             $storagePath = storage_path("app/public/uploads/{$directory}/" . $filename);
@@ -82,9 +82,9 @@ class FileStorageService
             return $filename;
         }
 
-        $disk = config('filesystems.default', 'public');
+        $disk = config('filesystems.default') ?: 'public';
 
-        if ($disk === 'public' || $disk === 'local') {
+        if (empty($disk) || $disk === 'public' || $disk === 'local' || !config()->has("filesystems.disks.{$disk}")) {
             return asset("uploads/{$directory}/" . $filename);
         }
 

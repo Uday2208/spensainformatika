@@ -45,6 +45,7 @@
         "APP_DEBUG": "true",
         "APP_URL": "https://spensainformatika.vercel.app",
         "APP_MAINTENANCE_DRIVER": "file",
+        "FILESYSTEM_DISK": "public",
         "LARAVEL_STORAGE_PATH": "/tmp/storage",
         "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
         "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
