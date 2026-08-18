@@ -1,0 +1,7 @@
+{
+    "deploy": {
+        "type": "composer",
+        "php_version": "8.3",
+        "webroot": "/public"
+    }
+}
