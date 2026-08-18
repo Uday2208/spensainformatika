@@ -63,28 +63,6 @@
     </div>
 </section>
 
-<!-- Stats Section -->
-<div class="bg-brand">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-12">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
-            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
-                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['siswa'] ?? 0 }}<span class="text-blue-200">+</span></div>
-                <div class="text-blue-100 font-medium">Siswa Terdaftar</div>
-            </div>
-            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
-                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['kelas'] ?? 0 }}</div>
-                <div class="text-blue-100 font-medium">Kelas Aktif</div>
-            </div>
-            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
-                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['materi'] ?? 0 }}<span class="text-blue-200">+</span></div>
-                <div class="text-blue-100 font-medium">Materi Pembelajaran</div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
 <!-- Testimonials -->
 @if(isset($komentars) && $komentars->count() > 0)
 <style>
@@ -148,5 +126,25 @@
     </div>
 </section>
 @endif
+
+<!-- Stats Section -->
+<div class="bg-brand">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-12">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
+                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['siswa'] ?? 0 }}<span class="text-blue-200">+</span></div>
+                <div class="text-blue-100 font-medium">Siswa Terdaftar</div>
+            </div>
+            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
+                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['kelas'] ?? 0 }}</div>
+                <div class="text-blue-100 font-medium">Kelas Aktif</div>
+            </div>
+            <div class="bg-white/10 rounded-xl p-6 backdrop-blur-sm border border-white/20">
+                <div class="text-4xl font-extrabold text-white mb-2">{{ $stats['materi'] ?? 0 }}<span class="text-blue-200">+</span></div>
+                <div class="text-blue-100 font-medium">Materi Pembelajaran</div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @endsection
