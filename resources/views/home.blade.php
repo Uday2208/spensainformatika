@@ -149,29 +149,4 @@
 </section>
 @endif
 
-<!-- Final CTA Section -->
-<section class="bg-slate-900 relative overflow-hidden">
-    <div class="absolute inset-0">
-        <div class="absolute inset-0 bg-blue-600 mix-blend-multiply opacity-20"></div>
-        <div class="absolute -top-24 -right-24 w-96 h-96 bg-brand rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse"></div>
-        <div class="absolute -bottom-24 -left-24 w-96 h-96 bg-purple-600 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse" style="animation-delay: 2s;"></div>
-    </div>
-    
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24 relative z-10 text-center">
-        <h2 class="text-3xl font-extrabold text-white sm:text-4xl">
-            <span class="block">Siap untuk memulai?</span>
-            <span class="block text-blue-400 mt-2">Akses dashboard Anda sekarang.</span>
-        </h2>
-        <p class="mt-4 text-lg leading-6 text-slate-300">
-            Guru dapat mulai mengelola kelas, dan siswa dapat melihat perkembangan akademiknya dalam hitungan detik.
-        </p>
-        <div class="mt-8 flex justify-center">
-            <a href="{{ url('/login') }}" class="inline-flex items-center justify-center px-8 py-3 border border-transparent text-base font-bold rounded-lg text-slate-900 bg-white hover:bg-slate-100 shadow-lg shadow-white/10 transition-all hover:-translate-y-0.5">
-                Login ke Sistem
-                <svg class="ml-2 w-5 h-5 text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"></path></svg>
-            </a>
-        </div>
-    </div>
-</section>
-
 @endsection
