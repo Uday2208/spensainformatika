@@ -416,22 +416,22 @@ class GuruController extends Controller
         $now = now();
 
         foreach ($request->nilai as $siswa_id => $data) {
-            $tugas = $data['tugas'] ?? 0;
-            $quiz = $data['quiz'] ?? 0;
-            $proyek = $data['proyek'] ?? 0;
+            $tugas = (isset($data['tugas']) && $data['tugas'] !== '') ? (float)$data['tugas'] : 0;
+            $quiz = (isset($data['quiz']) && $data['quiz'] !== '') ? (float)$data['quiz'] : 0;
+            $proyek = (isset($data['proyek']) && $data['proyek'] !== '') ? (float)$data['proyek'] : 0;
             
             // Hitung rata-rata nilai harian
             if (isset($data['harian']) && $data['harian'] !== '' && $data['harian'] !== null) {
                 $rata_harian = (float)$data['harian'];
             } else {
-                $rata_harian = $rataHarianMap[$siswa_id] ?? 80;
+                $rata_harian = (float)($rataHarianMap[$siswa_id] ?? 80);
             }
 
-            // Hitung rata-rata nilai ulangan
-            $rata_ulangan = $rataUlanganMap[$siswa_id] ?? null;
-
-            if ($rata_ulangan === null) {
-                $rata_ulangan = $existingNilaiMap[$siswa_id] ?? 0;
+            // Hitung rata-rata nilai ulangan (prioritaskan input form jika diisi/ditarik)
+            if (isset($data['ulangan']) && $data['ulangan'] !== '' && $data['ulangan'] !== null && (float)$data['ulangan'] > 0) {
+                $rata_ulangan = (float)$data['ulangan'];
+            } else {
+                $rata_ulangan = $rataUlanganMap[$siswa_id] ?? ($existingNilaiMap[$siswa_id] ?? 0);
             }
 
             if ($sertakan_ulangan) {
@@ -443,10 +443,10 @@ class GuruController extends Controller
             $upsertData[] = [
                 'siswa_id' => $siswa_id,
                 'bab' => $request->bab,
-                'tugas' => $tugas,
-                'quiz' => $quiz,
-                'proyek' => $proyek,
-                'ulangan' => round($rata_ulangan, 2),
+                'tugas' => round($tugas, 2),
+                'quiz' => round($quiz, 2),
+                'proyek' => round($proyek, 2),
+                'ulangan' => round((float)$rata_ulangan, 2),
                 'nilai_akhir' => round($nilai_akhir, 2),
                 'created_at' => $now,
                 'updated_at' => $now,

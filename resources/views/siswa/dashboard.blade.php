@@ -105,10 +105,12 @@
                     <tr>
                         <th class="w-12 text-center">No</th>
                         <th>Materi / Bab</th>
-                        <th class="w-24 text-center">Tugas</th>
-                        <th class="w-24 text-center">Quiz</th>
-                        <th class="w-24 text-center">Proyek</th>
-                        <th class="w-32 text-center bg-slate-100">Nilai Akhir</th>
+                        <th class="w-20 text-center bg-blue-50/50 text-blue-900 font-bold">Harian</th>
+                        <th class="w-20 text-center">Tugas</th>
+                        <th class="w-20 text-center">Quiz</th>
+                        <th class="w-20 text-center">Proyek</th>
+                        <th class="w-20 text-center bg-amber-50/60 text-amber-900 font-bold">Ulangan</th>
+                        <th class="w-32 text-center bg-slate-100 font-bold">Nilai Akhir</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -116,16 +118,20 @@
                     <tr class="hover:bg-slate-50">
                         <td class="text-center text-slate-500">{{ $index + 1 }}</td>
                         <td class="font-bold text-slate-700">{{ $nilai->bab }}</td>
-                        <td class="text-center text-slate-600">{{ $nilai->tugas == 0 ? '-' : $nilai->tugas }}</td>
-                        <td class="text-center text-slate-600">{{ $nilai->quiz == 0 ? '-' : $nilai->quiz }}</td>
-                        <td class="text-center text-slate-600">{{ $nilai->proyek == 0 ? '-' : $nilai->proyek }}</td>
-                        <td class="text-center font-bold {{ $nilai->nilai_akhir >= $kkm ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50' }} flex items-center justify-center space-x-2 p-2">
-                            <span>{{ $nilai->nilai_akhir }}</span>
-                            @if($nilai->nilai_akhir >= $kkm)
-                                <span class="px-1.5 py-0.5 bg-green-200 text-green-800 text-[9px] rounded uppercase">Tuntas</span>
-                            @else
-                                <span class="px-1.5 py-0.5 bg-red-200 text-red-800 text-[9px] rounded uppercase">Remedial</span>
-                            @endif
+                        <td class="text-center font-semibold text-blue-800 bg-blue-50/20">{{ number_format($rataKeaktifan, 1) }}</td>
+                        <td class="text-center text-slate-600 font-medium">{{ (float)$nilai->tugas > 0 ? number_format($nilai->tugas, 1) : '-' }}</td>
+                        <td class="text-center text-slate-600 font-medium">{{ (float)$nilai->quiz > 0 ? number_format($nilai->quiz, 1) : '-' }}</td>
+                        <td class="text-center text-slate-600 font-medium">{{ (float)$nilai->proyek > 0 ? number_format($nilai->proyek, 1) : '-' }}</td>
+                        <td class="text-center font-semibold text-amber-800 bg-amber-50/20">{{ (float)$nilai->ulangan > 0 ? number_format($nilai->ulangan, 1) : '-' }}</td>
+                        <td class="text-center font-bold {{ $nilai->nilai_akhir >= $kkm ? 'text-green-700 bg-green-50' : 'text-red-700 bg-red-50' }} p-2">
+                            <div class="flex items-center justify-center gap-1.5">
+                                <span class="text-sm font-extrabold">{{ number_format($nilai->nilai_akhir, 1) }}</span>
+                                @if($nilai->nilai_akhir >= $kkm)
+                                    <span class="px-1.5 py-0.5 bg-green-200 text-green-800 text-[9px] font-bold rounded uppercase">Tuntas</span>
+                                @else
+                                    <span class="px-1.5 py-0.5 bg-red-200 text-red-800 text-[9px] font-bold rounded uppercase">Remedial</span>
+                                @endif
+                            </div>
                         </td>
                     </tr>
                     @endforeach

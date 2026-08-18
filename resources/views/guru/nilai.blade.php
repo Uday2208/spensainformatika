@@ -54,16 +54,14 @@
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-500 mb-1">Pilih Kelas</label>
-                    <form method="GET" action="{{ url()->current() }}">
-                        <select name="kelas_id" onchange="this.form.submit()" class="input-compact bg-slate-50 w-full md:w-32 cursor-pointer">
-                            <option value="">-- Pilih --</option>
-                            @foreach($kelas as $k)
-                                <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
-                                    {{ $k->nama_kelas }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </form>
+                    <select name="kelas_id" onchange="if(this.value){ window.location.href='{{ url()->current() }}?kelas_id=' + this.value; } else { window.location.href='{{ url()->current() }}'; }" class="input-compact bg-slate-50 w-full md:w-32 cursor-pointer">
+                        <option value="">-- Pilih --</option>
+                        @foreach($kelas as $k)
+                            <option value="{{ $k->id }}" {{ request('kelas_id') == $k->id ? 'selected' : '' }}>
+                                {{ $k->nama_kelas }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
                 
                 <!-- Bobot Persentase dengan Ceklis Dinamis -->
@@ -576,6 +574,35 @@
                         el.__x.$data.rataUjian = Object.assign({}, data);
                     }
                 }
+
+                // Sync ke setiap baris siswa
+                document.querySelectorAll('.siswa-row').forEach(row => {
+                    const siswaId = parseInt(row.dataset.siswa);
+                    const val = (data && data[siswaId] !== undefined) ? parseFloat(data[siswaId]) : 0;
+                    
+                    if (window.Alpine && typeof Alpine.$data === 'function') {
+                        const rowData = Alpine.$data(row);
+                        if (rowData) {
+                            rowData.ulangan = val;
+                        }
+                    } else if (row.__x) {
+                        row.__x.$data.ulangan = val;
+                    }
+
+                    const valSpan = row.querySelector('.input-ulangan-val');
+                    if (valSpan) {
+                        valSpan.textContent = val.toFixed(1);
+                        if (val > 0) {
+                            valSpan.className = 'input-ulangan-val inline-block py-1 px-2.5 rounded-lg font-mono font-black text-xs shadow-xs bg-green-100 border border-green-400 text-green-900';
+                        } else {
+                            valSpan.className = 'input-ulangan-val inline-block py-1 px-2.5 rounded-lg font-mono font-black text-xs shadow-xs bg-slate-100 border border-slate-300 text-slate-500';
+                        }
+                    }
+                    const hiddenInput = row.querySelector('input[name*="[ulangan]"]');
+                    if (hiddenInput) {
+                        hiddenInput.value = val;
+                    }
+                });
             })
             .catch(err => console.error('Error fetching exam averages:', err));
     }

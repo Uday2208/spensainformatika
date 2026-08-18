@@ -36,5 +36,5 @@ foreach ($tmpDirs as $dir) {
     }
 }
 
-// Forward request to Laravel root entry point
-require __DIR__ . '/../index.php';
+// Forward request to Laravel public entry point
+require __DIR__ . '/../public/index.php';
