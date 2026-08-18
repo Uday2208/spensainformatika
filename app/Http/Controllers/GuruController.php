@@ -1011,7 +1011,7 @@ class GuruController extends Controller
             'avg_kehadiran' => $avgKehadiran,
         ];
         
-        $siswas = $query->paginate(25)->withQueryString();
+        $siswas = $query->paginate(35)->withQueryString();
 
         return view('guru.rekap-absensi', compact('kelas', 'kelas_id', 'nama_siswa', 'siswas', 'stats'));
     }
