@@ -35,7 +35,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16 items-center">
                 <div class="flex-shrink-0 flex items-center">
-                    <a href="/" class="text-2xl font-bold text-brand">GURU<span class="text-dark">INFORMATIKA</span></a>
+                    <a href="/" class="text-2xl font-bold text-brand">INFORMATIKA <span class="text-dark">VII</span></a>
                 </div>
                 <!-- Desktop Menu -->
                 <div class="hidden md:flex space-x-8 items-center">
