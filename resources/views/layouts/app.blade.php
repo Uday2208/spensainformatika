@@ -41,7 +41,7 @@
         
         <!-- Sidebar Header -->
         <div class="flex items-center justify-between h-[60px] px-6 bg-blue-950/30 border-b border-blue-800/50">
-            <div class="flex items-center gap-3">
+            <a href="{{ url('/') }}" class="flex items-center gap-3 hover:opacity-90 transition-opacity" title="Menuju Halaman Utama">
                 @if(!empty($app_settings['app_logo']))
                     <div class="w-8 h-8 rounded-lg overflow-hidden bg-white shadow-inner flex-shrink-0 flex items-center justify-center p-0.5">
                         @if(str_starts_with($app_settings['app_logo'], 'data:image'))
@@ -59,7 +59,7 @@
                     <h2 class="text-sm font-bold tracking-wider leading-tight">{{ $app_settings['app_name'] ?? 'SPENSA' }}</h2>
                     <p class="text-[10px] text-blue-200 uppercase tracking-widest">{{ $app_settings['app_subname'] ?? 'Presensi Digital' }}</p>
                 </div>
-            </div>
+            </a>
             <!-- Close button for mobile -->
             <button @click="sidebarOpen = false" class="lg:hidden p-2 rounded-md text-blue-200 hover:text-white hover:bg-white/10 transition-colors">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
