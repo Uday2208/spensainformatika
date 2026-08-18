@@ -71,7 +71,7 @@
                 <div class="sm:w-48 flex-shrink-0">
                     @if($artikel->gambar && count($artikel->gambar) > 0)
                         <div class="relative w-full h-32 rounded overflow-hidden bg-slate-100 group">
-                            <img src="{{ asset('uploads/artikel/' . $artikel->gambar[0]) }}" alt="Preview" class="w-full h-full object-cover">
+                            <img src="{{ \App\Services\FileStorageService::url($artikel->gambar[0], 'artikel') }}" alt="Preview" class="w-full h-full object-cover">
                             @if(count($artikel->gambar) > 1)
                                 <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
                                     <span class="text-white font-bold text-sm">+{{ count($artikel->gambar) - 1 }} Foto</span>

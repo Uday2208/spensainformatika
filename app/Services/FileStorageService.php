@@ -15,26 +15,35 @@ class FileStorageService
      */
     public static function upload(UploadedFile $file, string $directory = 'uploads'): string
     {
+        // Deteksi apakah sedang berjalan di lingkungan Serverless Read-Only (Vercel / Lambda)
+        $isServerless = isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) || file_exists('/var/task');
+
+        if ($isServerless) {
+            // Encode gambar ke format Base64 Data URI agar persisten di database remote tanpa butuh disk lokal
+            $mime = $file->getMimeType() ?: 'image/jpeg';
+            return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
+        }
+
         $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
         
         $disk = config('filesystems.default') ?: 'public';
 
         if (empty($disk) || $disk === 'public' || $disk === 'local' || !config()->has("filesystems.disks.{$disk}")) {
-            // Ensure local directory exists in public/uploads for fallback compatibility
+            // Environment Local (XAMPP): Simpan ke public_path
             $publicDir = public_path("uploads/{$directory}");
             if (!File::exists($publicDir)) {
                 @File::makeDirectory($publicDir, 0755, true, true);
             }
             $file->move($publicDir, $filename);
             
-            // Also mirror to storage/app/public if storage link exists
+            // Mirroring ke storage/app/public jika ada
             $storagePublicDir = storage_path("app/public/uploads/{$directory}");
             if (!File::exists($storagePublicDir)) {
                 @File::makeDirectory($storagePublicDir, 0755, true, true);
             }
             @File::copy($publicDir . '/' . $filename, $storagePublicDir . '/' . $filename);
         } else {
-            // Cloud disk (S3, R2, etc.)
+            // Cloud disk (S3, R2, dll.)
             Storage::disk($disk)->putFileAs("uploads/{$directory}", $file, $filename, 'public');
         }
 
@@ -48,6 +57,11 @@ class FileStorageService
     {
         if (empty($filename)) {
             return false;
+        }
+
+        // Jika data adalah Base64 Data URI, tidak ada file fisik yang perlu dihapus
+        if (Str::startsWith($filename, 'data:image')) {
+            return true;
         }
 
         $disk = config('filesystems.default') ?: 'public';
@@ -77,8 +91,8 @@ class FileStorageService
             return '';
         }
 
-        // If filename is already a full URL (e.g. from cloud storage)
-        if (Str::startsWith($filename, ['http://', 'https://'])) {
+        // Jika gambar disimpan sebagai Base64 atau URL eksternal, kembalikan langsung stringnya
+        if (Str::startsWith($filename, ['data:image', 'http://', 'https://'])) {
             return $filename;
         }
 

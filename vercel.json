@@ -41,6 +41,7 @@
     "env": {
         "APP_NAME": "SPENSA",
         "APP_ENV": "production",
+        "VERCEL": "1",
         "APP_KEY": "base64:XxHGGKj0zKysGamSoF+zQmRiVIdFT2q27t3FzKT5ydc=",
         "APP_DEBUG": "true",
         "APP_URL": "https://spensainformatika.vercel.app",

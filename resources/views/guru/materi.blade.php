@@ -88,7 +88,7 @@
             <div class="bg-white rounded border border-slate-200 shadow-sm overflow-hidden flex flex-col group">
                 @if($materi->foto)
                     <div class="h-40 w-full overflow-hidden bg-slate-100">
-                        <img src="{{ asset('uploads/materi/' . $materi->foto) }}" alt="{{ $materi->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+                        <img src="{{ \App\Services\FileStorageService::url($materi->foto, 'materi') }}" alt="{{ $materi->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
                     </div>
                 @else
                     <div class="h-40 w-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center">

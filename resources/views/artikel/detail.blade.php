@@ -46,7 +46,7 @@
                 @if($artikel->gambar && is_array($artikel->gambar) && count($artikel->gambar) > 0)
                     @if(count($artikel->gambar) == 1)
                         <div class="w-full rounded-2xl overflow-hidden mb-8 shadow-md max-h-[450px]">
-                            <img src="{{ asset('uploads/artikel/' . $artikel->gambar[0]) }}" alt="{{ $artikel->judul }}" class="w-full h-full object-cover">
+                            <img src="{{ \App\Services\FileStorageService::url($artikel->gambar[0], 'artikel') }}" alt="{{ $artikel->judul }}" class="w-full h-full object-cover">
                         </div>
                     @else
                         <!-- Carousel Gambar -->
@@ -54,7 +54,7 @@
                             <div class="w-full h-[350px] sm:h-[450px] relative">
                                 @foreach($artikel->gambar as $index => $img)
                                 <div x-show="activeSlide === {{ $index }}" x-transition.opacity.duration.500ms class="absolute inset-0">
-                                    <img src="{{ asset('uploads/artikel/' . $img) }}" class="w-full h-full object-cover">
+                                    <img src="{{ \App\Services\FileStorageService::url($img, 'artikel') }}" class="w-full h-full object-cover">
                                 </div>
                                 @endforeach
                             </div>

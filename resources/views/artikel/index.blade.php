@@ -22,7 +22,7 @@
                 
                 <div class="w-full h-48 overflow-hidden bg-slate-100 relative">
                     @if($artikel->gambar && is_array($artikel->gambar) && count($artikel->gambar) > 0)
-                        <img src="{{ asset('uploads/artikel/' . $artikel->gambar[0]) }}" alt="{{ $artikel->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <img src="{{ \App\Services\FileStorageService::url($artikel->gambar[0], 'artikel') }}" alt="{{ $artikel->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                     @else
                         <img src="https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80" alt="{{ $artikel->judul }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
                     @endif
