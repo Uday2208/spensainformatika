@@ -38,8 +38,11 @@
         }
     ],
     "env": {
+        "APP_NAME": "SPENSA",
         "APP_ENV": "production",
+        "APP_KEY": "base64:XxHGGKj0zKysGamSoF+zQmRiVIdFT2q27t3FzKT5ydc=",
         "APP_DEBUG": "false",
+        "APP_URL": "https://spensa1.vercel.app",
         "LARAVEL_STORAGE_PATH": "/tmp/storage",
         "APP_CONFIG_CACHE": "/tmp/bootstrap/cache/config.php",
         "APP_EVENTS_CACHE": "/tmp/bootstrap/cache/events.php",
@@ -47,8 +50,15 @@
         "APP_ROUTES_CACHE": "/tmp/bootstrap/cache/routes.php",
         "APP_SERVICES_CACHE": "/tmp/bootstrap/cache/services.php",
         "VIEW_COMPILED_PATH": "/tmp/storage/framework/views",
+        "DB_CONNECTION": "mysql",
+        "DB_HOST": "bv8pjygepicdh0jmpbkw-mysql.services.clever-cloud.com",
+        "DB_PORT": "3306",
+        "DB_DATABASE": "bv8pjygepicdh0jmpbkw",
+        "DB_USERNAME": "usjdl6ccvp3eytsd",
+        "DB_PASSWORD": "hZHEeEcYE90PyNj9azZ5",
         "CACHE_STORE": "array",
         "SESSION_DRIVER": "cookie",
+        "SESSION_SECURE_COOKIE": "true",
         "LOG_CHANNEL": "stderr"
     }
 }
