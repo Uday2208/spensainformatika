@@ -1159,7 +1159,7 @@ class GuruController extends Controller
 
     public function artikel()
     {
-        $artikels = Artikel::latest()->paginate(20);
+        $artikels = Artikel::latest()->paginate(10);
         return view('guru.artikel', compact('artikels'));
     }
 

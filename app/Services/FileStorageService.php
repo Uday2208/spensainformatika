@@ -19,7 +19,25 @@ class FileStorageService
         $isServerless = isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) || file_exists('/var/task');
 
         if ($isServerless) {
-            // Encode gambar ke format Base64 Data URI agar persisten di database remote tanpa butuh disk lokal
+            // Coba unggah ke Cloud Image Provider (ImgBB Free API)
+            try {
+                $apiKey = env('IMGBB_API_KEY', '7b4e2f6990d5658e454ebbbbe56587d5'); // Built-in Free API Key
+                $base64Image = base64_encode(file_get_contents($file->getRealPath()));
+
+                $response = \Illuminate\Support\Facades\Http::asForm()->timeout(15)->post('https://api.imgbb.com/1/upload', [
+                    'key' => $apiKey,
+                    'image' => $base64Image,
+                    'name' => 'spensa_' . time() . '_' . Str::random(6),
+                ]);
+
+                if ($response->successful() && isset($response->json()['data']['url'])) {
+                    return $response->json()['data']['url']; // Mengembalikan Direct HTTPS URL dari Cloud
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('ImgBB upload error: ' . $e->getMessage());
+            }
+
+            // Fallback kompresi Base64 ringan jika cloud API gagal
             $mime = $file->getMimeType() ?: 'image/jpeg';
             return 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($file->getRealPath()));
         }
