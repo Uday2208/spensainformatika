@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('nilais', function (Blueprint $table) {
-            $table->unique(['siswa_id', 'bab'], 'nilais_siswa_id_bab_unique');
-        });
+        try {
+            Schema::table('nilais', function (Blueprint $table) {
+                $table->unique(['siswa_id', 'bab'], 'nilais_siswa_id_bab_unique');
+            });
+        } catch (\Exception $e) {
+            // Index already exists on live database
+        }
     }
 
     /**
