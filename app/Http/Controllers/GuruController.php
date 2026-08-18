@@ -950,18 +950,107 @@ class GuruController extends Controller
         $kelas_id = $request->kelas_id;
         
         try {
-            $query = JurnalMengajar::with('kelas')->orderBy('tanggal', 'desc');
+            $query = JurnalMengajar::with('kelas')->orderBy('tanggal', 'desc')->orderBy('pertemuan', 'desc');
             
             if ($kelas_id) {
                 $query->where('kelas_id', $kelas_id);
             }
             
-            $jurnals = $query->paginate(25)->withQueryString();
+            $jurnals = $query->paginate(20)->withQueryString();
         } catch (\Exception $e) {
-            $jurnals = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+            $jurnals = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
 
         return view('guru.rekap-jurnal', compact('kelas', 'kelas_id', 'jurnals'));
+    }
+
+    public function storeJurnal(Request $request)
+    {
+        $request->validate([
+            'kelas_id' => 'required|exists:kelas,id',
+            'tanggal' => 'required|date',
+            'pertemuan' => 'required|integer|min:1',
+            'materi' => 'required|string|max:255',
+            'tujuan_pembelajaran' => 'nullable|string',
+            'kegiatan' => 'nullable|string',
+            'catatan' => 'nullable|string',
+            'tindak_lanjut' => 'nullable|string',
+        ]);
+
+        JurnalMengajar::updateOrCreate(
+            [
+                'kelas_id' => $request->kelas_id,
+                'tanggal' => $request->tanggal,
+                'pertemuan' => $request->pertemuan,
+            ],
+            [
+                'guru_id' => auth()->id(),
+                'materi' => $request->materi,
+                'tujuan_pembelajaran' => $request->tujuan_pembelajaran,
+                'kegiatan' => $request->kegiatan,
+                'catatan' => $request->catatan,
+                'tindak_lanjut' => $request->tindak_lanjut,
+            ]
+        );
+
+        return back()->with('success', 'Jurnal mengajar berhasil disimpan!');
+    }
+
+    public function destroyJurnal($id)
+    {
+        $jurnal = JurnalMengajar::findOrFail($id);
+        $jurnal->delete();
+
+        return back()->with('success', 'Jurnal mengajar berhasil dihapus!');
+    }
+
+    public function exportRekapJurnal(Request $request)
+    {
+        $kelas_id = $request->kelas_id;
+        $query = JurnalMengajar::with('kelas')->orderBy('tanggal', 'asc')->orderBy('pertemuan', 'asc');
+        
+        $filename_part = "semua_kelas";
+        if ($kelas_id) {
+            $query->where('kelas_id', $kelas_id);
+            $kelas = Kelas::find($kelas_id);
+            if ($kelas) $filename_part = str_replace(' ', '_', $kelas->nama_kelas);
+        }
+
+        $jurnals = $query->get();
+        $filename = "rekap_jurnal_mengajar_" . $filename_part . ".csv";
+
+        $headers = array(
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        );
+
+        $columns = array('No', 'Tanggal', 'Kelas', 'Pertemuan Ke', 'Materi / Topik', 'Tujuan Pembelajaran', 'Kegiatan Pembelajaran', 'Catatan / Kejadian', 'Tindak Lanjut');
+
+        $callback = function() use($jurnals, $columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
+            fputcsv($file, $columns, ';');
+
+            foreach ($jurnals as $index => $j) {
+                fputcsv($file, array(
+                    $index + 1,
+                    \Carbon\Carbon::parse($j->tanggal)->translatedFormat('d F Y'),
+                    $j->kelas->nama_kelas ?? '-',
+                    'Ke-' . $j->pertemuan,
+                    $j->materi ?: '-',
+                    $j->tujuan_pembelajaran ?: '-',
+                    $j->kegiatan ?: '-',
+                    $j->catatan ?: '-',
+                    $j->tindak_lanjut ?: '-'
+                ), ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function rekapAbsensi(Request $request)

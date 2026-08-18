@@ -157,6 +157,9 @@
                             <a href="{{ url('/app/rekap-absensi') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/rekap-absensi*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
                                 Rekap Presensi
                             </a>
+                            <a href="{{ url('/app/rekap-jurnal') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/rekap-jurnal*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
+                                Rekap Jurnal Mengajar
+                            </a>
                         </div>
                     </div>
                     <a href="{{ url('/app/pengaturan') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/pengaturan') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">

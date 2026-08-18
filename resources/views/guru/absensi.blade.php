@@ -76,10 +76,88 @@
     </div>
     <h3 class="text-base font-bold text-blue-800 mb-1">Silakan Pilih Kelas Terlebih Dahulu</h3>
     <p class="text-xs text-blue-700 max-w-md leading-relaxed">
-        Untuk melakukan pengisian presensi siswa, pilih salah satu kelas pada filter di atas lalu klik tombol <strong>Tampilkan</strong>.
+        Untuk melakukan pengisian presensi siswa dan jurnal mengajar, pilih salah satu kelas pada filter di atas lalu klik tombol <strong>Tampilkan</strong>.
     </p>
 </div>
 @else
+
+{{-- ============================================================
+     KARTU JURNAL MENGAJAR HARIAN
+     ============================================================ --}}
+@php
+    $currentJurnal = \App\Models\JurnalMengajar::where('kelas_id', $kelas_id)->where('tanggal', $tanggal)->first();
+@endphp
+<div x-data="{ openJurnal: {{ $currentJurnal ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5 overflow-hidden">
+    <div class="flex items-center justify-between cursor-pointer" @click="openJurnal = !openJurnal">
+        <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center font-bold">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">
+                    Jurnal Mengajar Harian
+                    @if($currentJurnal)
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">✓ Sudah Terisi (Pertemuan Ke-{{ $currentJurnal->pertemuan }})</span>
+                    @else
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">Belum Diisi</span>
+                    @endif
+                </h3>
+                <p class="text-xs text-slate-400">Catat agenda, materi pembelajaran, dan catatan kelas untuk supervisi & rekap.</p>
+            </div>
+        </div>
+        <button type="button" class="text-slate-400 hover:text-blue-600 transition-colors">
+            <svg :class="openJurnal ? 'rotate-180' : ''" class="w-5 h-5 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        </button>
+    </div>
+
+    <div x-show="openJurnal" x-collapse class="mt-4 pt-4 border-t border-slate-100">
+        <form action="{{ route('guru.jurnal.store') }}" method="POST" class="space-y-4">
+            @csrf
+            <input type="hidden" name="kelas_id" value="{{ $kelas_id }}">
+            <input type="hidden" name="tanggal" value="{{ $tanggal }}">
+
+            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div class="sm:col-span-1">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pertemuan Ke- *</label>
+                    <input type="number" name="pertemuan" min="1" max="50" required value="{{ $currentJurnal->pertemuan ?? 1 }}" class="input-compact w-full bg-slate-50 font-bold">
+                </div>
+                <div class="sm:col-span-3">
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Materi / Topik Pembelajaran *</label>
+                    <input type="text" name="materi" required value="{{ $currentJurnal->materi ?? '' }}" placeholder="Contoh: Berpikir Komputasional / Pengenalan Algoritma" class="input-compact w-full bg-slate-50">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tujuan Pembelajaran</label>
+                    <textarea name="tujuan_pembelajaran" rows="2" placeholder="Tujuan yang diharapkan dicapai siswa..." class="input-compact w-full bg-slate-50">{{ $currentJurnal->tujuan_pembelajaran ?? '' }}</textarea>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Kegiatan Pembelajaran</label>
+                    <textarea name="kegiatan" rows="2" placeholder="Uraian singkat aktivitas belajar mengajar..." class="input-compact w-full bg-slate-50">{{ $currentJurnal->kegiatan ?? '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan / Kejadian di Kelas</label>
+                    <input type="text" name="catatan" value="{{ $currentJurnal->catatan ?? '' }}" placeholder="Catatan khusus situasi kelas jika ada..." class="input-compact w-full bg-slate-50">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tindak Lanjut</label>
+                    <input type="text" name="tindak_lanjut" value="{{ $currentJurnal->tindak_lanjut ?? '' }}" placeholder="Tindak lanjut untuk pertemuan berikutnya..." class="input-compact w-full bg-slate-50">
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-1">
+                <button type="submit" class="btn-compact bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+                    Simpan Jurnal Mengajar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 @if($sudahDiisi)
 <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-3 mb-4">

@@ -67,8 +67,10 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/rekap-absensi', [GuruController::class, 'rekapAbsensi']);
         Route::get('/rekap-absensi/export', [GuruController::class, 'exportRekapAbsensi']);
         Route::get('/rekap-absensi/siswa/{id}', [GuruController::class, 'rekapAbsensiSiswa']);
-        Route::get('/rekap-absensi/siswa/{id}/export', [GuruController::class, 'exportRekapAbsensiSiswa']);
         Route::get('/rekap-jurnal', [GuruController::class, 'rekapJurnal']);
+        Route::post('/jurnal', [GuruController::class, 'storeJurnal'])->name('guru.jurnal.store');
+        Route::delete('/jurnal/{id}', [GuruController::class, 'destroyJurnal'])->name('guru.jurnal.destroy');
+        Route::get('/rekap-jurnal/export', [GuruController::class, 'exportRekapJurnal'])->name('guru.rekap-jurnal.export');
         Route::get('/pengaturan', [GuruController::class, 'pengaturan']);
         Route::post('/pengaturan', [GuruController::class, 'storePengaturan']);
 
