@@ -42,7 +42,7 @@
         "APP_NAME": "SPENSA",
         "APP_ENV": "production",
         "APP_KEY": "base64:XxHGGKj0zKysGamSoF+zQmRiVIdFT2q27t3FzKT5ydc=",
-        "APP_DEBUG": "false",
+        "APP_DEBUG": "true",
         "APP_URL": "https://spensainformatika.vercel.app",
         "APP_MAINTENANCE_DRIVER": "file",
         "LARAVEL_STORAGE_PATH": "/tmp/storage",
