@@ -109,8 +109,17 @@ class FileStorageService
             return '';
         }
 
-        // Jika gambar disimpan sebagai Base64 atau URL eksternal, kembalikan langsung stringnya
-        if (Str::startsWith($filename, ['data:image', 'http://', 'https://'])) {
+        // Jika URL eksternal (Cloud Image Provider seperti ImgBB, Cloudinary, S3, dll.)
+        if (Str::startsWith($filename, ['http://', 'https://'])) {
+            return $filename;
+        }
+
+        // Jika Base64 Data URI: Hanya render jika ukurannya wajar (< 50KB) untuk mencegah crash Vercel Payload Too Large
+        if (Str::startsWith($filename, 'data:image')) {
+            if (strlen($filename) > 65000) {
+                // Fallback ke placeholder jika Base64 terlalu raksasa
+                return 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80';
+            }
             return $filename;
         }
 
