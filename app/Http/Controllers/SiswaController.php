@@ -77,7 +77,7 @@ class SiswaController extends Controller
         $request->validate([
             'username' => 'required|string|unique:users,username,' . $user->id,
             'password' => 'nullable|string|min:4',
-            'avatar'   => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'avatar'   => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096',
         ]);
 
         $dataToUpdate = [

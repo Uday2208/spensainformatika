@@ -267,11 +267,12 @@ function compressSiswaAvatar(input) {
     const file = input.files[0];
     compressedSiswaAvatarBlob = null;
 
-    if (file.size > 1024 * 1024) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = new Image();
-            img.onload = function() {
+    // Selalu kompres semua foto via Canvas
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const img = new Image();
+        img.onload = function() {
+            try {
                 const canvas = document.createElement('canvas');
                 let width = img.width;
                 let height = img.height;
@@ -293,15 +294,17 @@ function compressSiswaAvatar(input) {
                 ctx.drawImage(img, 0, 0, width, height);
 
                 canvas.toBlob(function(blob) {
-                    if (blob) {
+                    if (blob && blob.size > 0) {
                         compressedSiswaAvatarBlob = blob;
                     }
                 }, 'image/jpeg', 0.85);
-            };
-            img.src = e.target.result;
+            } catch (err) {
+                compressedSiswaAvatarBlob = null;
+            }
         };
-        reader.readAsDataURL(file);
-    }
+        img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -319,18 +322,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     submitBtn.innerText = 'Menyimpan...';
                 }
 
-                fetch('{{ url('/app/profil') }}', {
+                fetch('{{ url("/app/profil") }}', {
                     method: 'POST',
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: formData
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    body: formData,
+                    redirect: 'manual'
                 })
                 .then(response => {
-                    window.location.reload();
+                    if (response.status === 200 || response.type === 'opaqueredirect' || response.status === 0) {
+                        window.location.reload();
+                    } else {
+                        alert('Gagal menyimpan profil. Silakan coba lagi.');
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Simpan Perubahan'; }
+                    }
                 })
                 .catch(() => {
-                    profileForm.submit();
+                    alert('Koneksi terputus. Silakan coba lagi.');
+                    if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = 'Simpan Perubahan'; }
                 });
             }
         });

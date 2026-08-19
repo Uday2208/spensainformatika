@@ -328,38 +328,54 @@
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
         const textLabel = document.getElementById('avatarUploadText');
-        if (textLabel) textLabel.innerText = 'Mengunggah...';
 
-        const sendFormDirectly = (fileOrBlob) => {
+        // Validasi tipe file di sisi klien
+        if (!file.type.match(/^image\/(jpeg|png|jpg|webp)$/)) {
+            alert('Format file tidak didukung. Gunakan JPG, PNG, atau WebP.');
+            input.value = '';
+            return;
+        }
+
+        if (textLabel) textLabel.innerText = 'Mengompres...';
+
+        // Fungsi kirim blob hasil kompresi ke server via FormData
+        const sendCompressedBlob = (blob) => {
+            if (textLabel) textLabel.innerText = 'Mengunggah...';
+
             const formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
-            formData.append('avatar', fileOrBlob, 'avatar.jpg');
+            formData.append('avatar', blob, 'avatar.jpg');
 
-            fetch('{{ url('/app/avatar') }}', {
+            fetch('{{ url("/app/avatar") }}', {
                 method: 'POST',
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: formData
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: formData,
+                redirect: 'manual'
             })
             .then(response => {
-                if (response.ok || response.redirected) {
+                // redirect:manual → status 0 (opaque redirect) = Laravel redirect back (bisa sukses/gagal)
+                // status 200 = sukses langsung
+                if (response.status === 200 || response.type === 'opaqueredirect' || response.status === 0) {
                     window.location.reload();
                 } else {
-                    document.getElementById('avatarUploadForm').submit();
+                    alert('Gagal mengunggah foto. Silakan coba lagi.');
+                    if (textLabel) textLabel.innerText = 'Pilih Foto';
+                    input.value = '';
                 }
             })
             .catch(() => {
-                document.getElementById('avatarUploadForm').submit();
+                alert('Koneksi terputus. Silakan coba lagi.');
+                if (textLabel) textLabel.innerText = 'Pilih Foto';
+                input.value = '';
             });
         };
 
-        // Jika ukuran file > 1MB, kompres otomatis via Canvas sebelum kirim
-        if (file.size > 1024 * 1024) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const img = new Image();
-                img.onload = function() {
+        // Selalu kompres semua foto via Canvas (agar hasilnya selalu ~100-300KB)
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                try {
                     const canvas = document.createElement('canvas');
                     let width = img.width;
                     let height = img.height;
@@ -381,19 +397,33 @@
                     ctx.drawImage(img, 0, 0, width, height);
 
                     canvas.toBlob(function(blob) {
-                        if (blob) {
-                            sendFormDirectly(blob);
+                        if (blob && blob.size > 0) {
+                            sendCompressedBlob(blob);
                         } else {
-                            sendFormDirectly(file);
+                            alert('Gagal memproses foto. Coba pilih foto lain.');
+                            if (textLabel) textLabel.innerText = 'Pilih Foto';
+                            input.value = '';
                         }
                     }, 'image/jpeg', 0.85);
-                };
-                img.src = e.target.result;
+                } catch (err) {
+                    alert('Gagal memproses foto. Coba pilih foto lain.');
+                    if (textLabel) textLabel.innerText = 'Pilih Foto';
+                    input.value = '';
+                }
             };
-            reader.readAsDataURL(file);
-        } else {
-            sendFormDirectly(file);
-        }
+            img.onerror = function() {
+                alert('File yang dipilih bukan gambar yang valid.');
+                if (textLabel) textLabel.innerText = 'Pilih Foto';
+                input.value = '';
+            };
+            img.src = e.target.result;
+        };
+        reader.onerror = function() {
+            alert('Gagal membaca file. Silakan coba lagi.');
+            if (textLabel) textLabel.innerText = 'Pilih Foto';
+            input.value = '';
+        };
+        reader.readAsDataURL(file);
     }
     </script>
 </body>
