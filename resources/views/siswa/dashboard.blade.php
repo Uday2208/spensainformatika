@@ -267,31 +267,26 @@ function compressSiswaAvatar(input) {
     const file = input.files[0];
     compressedSiswaAvatarBlob = null;
 
-    // Selalu kompres semua foto via Canvas
+    // Micro-Square Compression: 150x150px (hanya ~10KB - 15KB)
     const reader = new FileReader();
     reader.onload = function(e) {
         const img = new Image();
         img.onload = function() {
             try {
                 const canvas = document.createElement('canvas');
-                let width = img.width;
-                let height = img.height;
-                const maxDim = 800;
+                const targetSize = 150;
+                canvas.width = targetSize;
+                canvas.height = targetSize;
+                const ctx = canvas.getContext('2d');
 
-                if (width > maxDim || height > maxDim) {
-                    if (width > height) {
-                        height = Math.round((height * maxDim) / width);
-                        width = maxDim;
-                    } else {
-                        width = Math.round((width * maxDim) / height);
-                        height = maxDim;
-                    }
+                let srcX = 0, srcY = 0, srcSize = Math.min(img.width, img.height);
+                if (img.width > img.height) {
+                    srcX = (img.width - img.height) / 2;
+                } else {
+                    srcY = (img.height - img.width) / 2;
                 }
 
-                canvas.width = width;
-                canvas.height = height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(img, 0, 0, width, height);
+                ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, targetSize, targetSize);
 
                 canvas.toBlob(function(blob) {
                     if (blob && blob.size > 0) {

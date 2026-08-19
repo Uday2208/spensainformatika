@@ -77,10 +77,31 @@ class AuthController extends Controller
                     \App\Services\FileStorageService::delete($oldAvatar, 'avatars');
                 }
 
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'success',
+                        'message' => 'Foto profil berhasil diperbarui.',
+                        'avatar_url' => $user->avatar_url
+                    ]);
+                }
+
                 return back()->with('success', 'Foto profil berhasil diperbarui.');
             } catch (\Exception $e) {
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Gagal mengunggah foto: ' . $e->getMessage()
+                    ], 500);
+                }
                 return back()->with('error', 'Gagal mengunggah foto. Silakan coba lagi.');
             }
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'File foto tidak ditemukan.'
+            ], 400);
         }
 
         return back()->with('error', 'File foto tidak diterima oleh server.');

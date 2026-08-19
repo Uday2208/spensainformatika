@@ -19,28 +19,10 @@ class FileStorageService
         $isServerless = isset($_ENV['VERCEL']) || isset($_SERVER['VERCEL']) || file_exists('/var/task');
 
         if ($isServerless) {
-            // Coba unggah ke Cloud Image Provider (ImgBB Free API)
-            try {
-                $apiKey = env('IMGBB_API_KEY', '7b4e2f6990d5658e454ebbbbe56587d5');
-                $base64Image = base64_encode(file_get_contents($file->getRealPath()));
-
-                $response = \Illuminate\Support\Facades\Http::asForm()->timeout(30)->post('https://api.imgbb.com/1/upload', [
-                    'key' => $apiKey,
-                    'image' => $base64Image,
-                    'name' => 'spensa_' . time() . '_' . Str::random(6),
-                ]);
-
-                if ($response->successful() && isset($response->json()['data']['url'])) {
-                    return $response->json()['data']['url'];
-                }
-
-                throw new \RuntimeException('ImgBB responded with status: ' . $response->status());
-            } catch (\RuntimeException $e) {
-                throw $e;
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Cloud upload failed: ' . $e->getMessage());
-                throw new \RuntimeException('Gagal mengunggah foto ke cloud storage.');
-            }
+            // Lingkungan Serverless (Vercel): Simpan sebagai Micro-Data URI langsung ke database
+            $mime = $file->getMimeType() ?: 'image/jpeg';
+            $data = file_get_contents($file->getRealPath());
+            return 'data:' . $mime . ';base64,' . base64_encode($data);
         }
 
         $filename = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
@@ -115,12 +97,8 @@ class FileStorageService
             return $filename;
         }
 
-        // Jika Base64 Data URI: Hanya render jika ukurannya wajar (< 50KB) untuk mencegah crash Vercel Payload Too Large
+        // Jika Base64 Data URI
         if (Str::startsWith($filename, 'data:image')) {
-            if (strlen($filename) > 65000) {
-                // Fallback ke placeholder jika Base64 terlalu raksasa
-                return 'https://images.unsplash.com/photo-1457369804613-52c61a468e7d?auto=format&fit=crop&w=600&q=80';
-            }
             return $filename;
         }
 

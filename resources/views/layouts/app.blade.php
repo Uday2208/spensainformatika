@@ -329,18 +329,16 @@
         const file = input.files[0];
         const textLabel = document.getElementById('avatarUploadText');
 
-        // Validasi tipe file di sisi klien
         if (!file.type.match(/^image\/(jpeg|png|jpg|webp)$/)) {
-            alert('Format file tidak didukung. Gunakan JPG, PNG, atau WebP.');
+            alert('Format file tidak didukung. Gunakan format JPG, PNG, atau WebP.');
             input.value = '';
             return;
         }
 
         if (textLabel) textLabel.innerText = 'Mengompres...';
 
-        // Fungsi kirim blob hasil kompresi ke server via FormData
         const sendCompressedBlob = (blob) => {
-            if (textLabel) textLabel.innerText = 'Mengunggah...';
+            if (textLabel) textLabel.innerText = 'Menyimpan...';
 
             const formData = new FormData();
             formData.append('_token', '{{ csrf_token() }}');
@@ -348,65 +346,64 @@
 
             fetch('{{ url("/app/avatar") }}', {
                 method: 'POST',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: formData,
-                redirect: 'manual'
+                headers: { 
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
             })
-            .then(response => {
-                // redirect:manual → status 0 (opaque redirect) = Laravel redirect back (bisa sukses/gagal)
-                // status 200 = sukses langsung
-                if (response.status === 200 || response.type === 'opaqueredirect' || response.status === 0) {
-                    window.location.reload();
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    if (textLabel) textLabel.innerText = 'Berhasil!';
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 500);
                 } else {
-                    alert('Gagal mengunggah foto. Silakan coba lagi.');
+                    alert(data.message || 'Gagal menyimpan foto profil.');
                     if (textLabel) textLabel.innerText = 'Pilih Foto';
                     input.value = '';
                 }
             })
-            .catch(() => {
-                alert('Koneksi terputus. Silakan coba lagi.');
-                if (textLabel) textLabel.innerText = 'Pilih Foto';
-                input.value = '';
+            .catch(err => {
+                // Fallback reload jika respon redirect
+                window.location.reload();
             });
         };
 
-        // Selalu kompres semua foto via Canvas (agar hasilnya selalu ~100-300KB)
+        // Micro-Square Compression: 150x150px (hanya ~10KB - 15KB)
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = new Image();
             img.onload = function() {
                 try {
                     const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    const maxDim = 800;
+                    const targetSize = 150;
+                    canvas.width = targetSize;
+                    canvas.height = targetSize;
+                    const ctx = canvas.getContext('2d');
 
-                    if (width > maxDim || height > maxDim) {
-                        if (width > height) {
-                            height = Math.round((height * maxDim) / width);
-                            width = maxDim;
-                        } else {
-                            width = Math.round((width * maxDim) / height);
-                            height = maxDim;
-                        }
+                    // Center Crop square
+                    let srcX = 0, srcY = 0, srcSize = Math.min(img.width, img.height);
+                    if (img.width > img.height) {
+                        srcX = (img.width - img.height) / 2;
+                    } else {
+                        srcY = (img.height - img.width) / 2;
                     }
 
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
+                    ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, targetSize, targetSize);
 
                     canvas.toBlob(function(blob) {
                         if (blob && blob.size > 0) {
                             sendCompressedBlob(blob);
                         } else {
-                            alert('Gagal memproses foto. Coba pilih foto lain.');
+                            alert('Gagal memproses gambar. Silakan coba lagi.');
                             if (textLabel) textLabel.innerText = 'Pilih Foto';
                             input.value = '';
                         }
                     }, 'image/jpeg', 0.85);
                 } catch (err) {
-                    alert('Gagal memproses foto. Coba pilih foto lain.');
+                    alert('Gagal memproses gambar di browser.');
                     if (textLabel) textLabel.innerText = 'Pilih Foto';
                     input.value = '';
                 }
@@ -419,7 +416,7 @@
             img.src = e.target.result;
         };
         reader.onerror = function() {
-            alert('Gagal membaca file. Silakan coba lagi.');
+            alert('Gagal membaca file dari perangkat.');
             if (textLabel) textLabel.innerText = 'Pilih Foto';
             input.value = '';
         };
