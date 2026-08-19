@@ -328,9 +328,33 @@
         if (!input.files || !input.files[0]) return;
         const file = input.files[0];
         const textLabel = document.getElementById('avatarUploadText');
-        if (textLabel) textLabel.innerText = 'Memproses...';
+        if (textLabel) textLabel.innerText = 'Mengunggah...';
 
-        // Jika ukuran file > 1MB, kompres otomatis via Canvas sebelum submit
+        const sendFormDirectly = (fileOrBlob) => {
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('avatar', fileOrBlob, 'avatar.jpg');
+
+            fetch('{{ url('/app/avatar') }}', {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: formData
+            })
+            .then(response => {
+                if (response.ok || response.redirected) {
+                    window.location.reload();
+                } else {
+                    document.getElementById('avatarUploadForm').submit();
+                }
+            })
+            .catch(() => {
+                document.getElementById('avatarUploadForm').submit();
+            });
+        };
+
+        // Jika ukuran file > 1MB, kompres otomatis via Canvas sebelum kirim
         if (file.size > 1024 * 1024) {
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -358,22 +382,17 @@
 
                     canvas.toBlob(function(blob) {
                         if (blob) {
-                            const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                                type: 'image/jpeg',
-                                lastModified: Date.now()
-                            });
-                            const dataTransfer = new DataTransfer();
-                            dataTransfer.items.add(compressedFile);
-                            input.files = dataTransfer.files;
+                            sendFormDirectly(blob);
+                        } else {
+                            sendFormDirectly(file);
                         }
-                        document.getElementById('avatarUploadForm').submit();
                     }, 'image/jpeg', 0.85);
                 };
                 img.src = e.target.result;
             };
             reader.readAsDataURL(file);
         } else {
-            document.getElementById('avatarUploadForm').submit();
+            sendFormDirectly(file);
         }
     }
     </script>

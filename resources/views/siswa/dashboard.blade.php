@@ -260,9 +260,13 @@
 </div>
 
 <script>
+let compressedSiswaAvatarBlob = null;
+
 function compressSiswaAvatar(input) {
     if (!input.files || !input.files[0]) return;
     const file = input.files[0];
+    compressedSiswaAvatarBlob = null;
+
     if (file.size > 1024 * 1024) {
         const reader = new FileReader();
         reader.onload = function(e) {
@@ -290,13 +294,7 @@ function compressSiswaAvatar(input) {
 
                 canvas.toBlob(function(blob) {
                     if (blob) {
-                        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
-                            type: 'image/jpeg',
-                            lastModified: Date.now()
-                        });
-                        const dataTransfer = new DataTransfer();
-                        dataTransfer.items.add(compressedFile);
-                        input.files = dataTransfer.files;
+                        compressedSiswaAvatarBlob = blob;
                     }
                 }, 'image/jpeg', 0.85);
             };
@@ -305,6 +303,39 @@ function compressSiswaAvatar(input) {
         reader.readAsDataURL(file);
     }
 }
+
+document.addEventListener('DOMContentLoaded', function() {
+    const profileForm = document.querySelector('form[action="{{ url('/app/profil') }}"]');
+    if (profileForm) {
+        profileForm.addEventListener('submit', function(e) {
+            if (compressedSiswaAvatarBlob) {
+                e.preventDefault();
+                const formData = new FormData(profileForm);
+                formData.set('avatar', compressedSiswaAvatarBlob, 'avatar.jpg');
+
+                const submitBtn = profileForm.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerText = 'Menyimpan...';
+                }
+
+                fetch('{{ url('/app/profil') }}', {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: formData
+                })
+                .then(response => {
+                    window.location.reload();
+                })
+                .catch(() => {
+                    profileForm.submit();
+                });
+            }
+        });
+    }
+});
 </script>
 
 @endsection
