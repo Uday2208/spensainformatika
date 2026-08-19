@@ -24,9 +24,21 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+
+            // Jika user adalah siswa namun profil siswanya sudah tidak ada (kelas terhapus), tolak login
+            if ($user->role === 'siswa' && !$user->siswa) {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
+                return back()->withErrors([
+                    'username' => 'Akun siswa ini sudah tidak aktif / kelas telah dihapus.',
+                ])->onlyInput('username');
+            }
+
             RateLimiter::clear('login:'.$request->input('username').'|'.$request->ip());
             $request->session()->regenerate();
-            return $this->redirectBasedOnRole(Auth::user());
+            return $this->redirectBasedOnRole($user);
         }
 
         return back()->withErrors([

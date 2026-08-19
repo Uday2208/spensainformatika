@@ -767,8 +767,20 @@ class GuruController extends Controller
 
     public function destroyKelas($id)
     {
-        Kelas::findOrFail($id)->delete();
-        return back()->with('success', 'Data kelas berhasil dihapus!');
+        $kelas = Kelas::findOrFail($id);
+        
+        // Ambil semua user_id dari siswa yang ada di kelas ini
+        $userIds = Siswa::where('kelas_id', $kelas->id)->pluck('user_id')->toArray();
+        
+        // Hapus kelas (ini akan cascade delete ke tabel siswas)
+        $kelas->delete();
+        
+        // Hapus akun login di tabel users terkait siswa tersebut
+        if (!empty($userIds)) {
+            User::whereIn('id', $userIds)->delete();
+        }
+
+        return back()->with('success', 'Data kelas dan akun siswa terkait berhasil dihapus!');
     }
 
     public function importSiswa(Request $request)
