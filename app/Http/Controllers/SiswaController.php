@@ -88,16 +88,23 @@ class SiswaController extends Controller
             $dataToUpdate['password'] = Hash::make($request->password);
         }
 
+        $oldAvatar = null;
         if ($request->hasFile('avatar')) {
-            // Delete old avatar file if not a base64 string
-            if ($user->avatar && !str_starts_with($user->avatar, 'data:image')) {
-                \App\Services\FileStorageService::delete($user->avatar, 'avatars');
+            try {
+                // Upload baru DULU sebelum menghapus yang lama
+                $dataToUpdate['avatar'] = \App\Services\FileStorageService::upload($request->file('avatar'), 'avatars');
+                $oldAvatar = $user->avatar;
+            } catch (\Exception $e) {
+                return back()->with('error', 'Gagal mengunggah foto profil. Silakan coba lagi.');
             }
-
-            $dataToUpdate['avatar'] = \App\Services\FileStorageService::upload($request->file('avatar'), 'avatars');
         }
 
         $user->update($dataToUpdate);
+
+        // Hapus avatar lama SETELAH data baru berhasil tersimpan
+        if ($oldAvatar && !str_starts_with($oldAvatar, 'data:image') && !str_starts_with($oldAvatar, 'http')) {
+            \App\Services\FileStorageService::delete($oldAvatar, 'avatars');
+        }
 
         return back()->with('success', 'Profil berhasil diperbarui!');
     }

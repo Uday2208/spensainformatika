@@ -61,15 +61,28 @@ class AuthController extends Controller
         $user = Auth::user();
 
         if ($request->hasFile('avatar')) {
-            // Delete old avatar file if not a base64 string
-            if ($user->avatar && !str_starts_with($user->avatar, 'data:image')) {
-                \App\Services\FileStorageService::delete($user->avatar, 'avatars');
-            }
+            try {
+                // Upload baru DULU sebelum menghapus yang lama
+                $newAvatarPath = \App\Services\FileStorageService::upload($request->file('avatar'), 'avatars');
 
-            $user->avatar = \App\Services\FileStorageService::upload($request->file('avatar'), 'avatars');
-            $user->save();
+                // Simpan referensi avatar lama
+                $oldAvatar = $user->avatar;
+
+                // Simpan avatar baru ke database
+                $user->avatar = $newAvatarPath;
+                $user->save();
+
+                // Hapus avatar lama SETELAH avatar baru berhasil tersimpan
+                if ($oldAvatar && !str_starts_with($oldAvatar, 'data:image') && !str_starts_with($oldAvatar, 'http')) {
+                    \App\Services\FileStorageService::delete($oldAvatar, 'avatars');
+                }
+
+                return back()->with('success', 'Foto profil berhasil diperbarui.');
+            } catch (\Exception $e) {
+                return back()->with('error', 'Gagal mengunggah foto. Silakan coba lagi.');
+            }
         }
 
-        return back()->with('success', 'Foto profil berhasil diperbarui.');
+        return back()->with('error', 'File foto tidak diterima oleh server.');
     }
 }
