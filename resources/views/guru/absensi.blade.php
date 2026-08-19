@@ -87,7 +87,7 @@
 @php
     $currentJurnal = \App\Models\JurnalMengajar::where('kelas_id', $kelas_id)->where('tanggal', $tanggal)->first();
 @endphp
-<div x-data="{ openJurnal: {{ $currentJurnal ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5 overflow-hidden">
+<div x-data="{ openJurnal: {{ ($currentJurnal || $errors->any()) ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5 overflow-hidden">
     <div class="flex items-center justify-between cursor-pointer" @click="openJurnal = !openJurnal">
         <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center font-bold">

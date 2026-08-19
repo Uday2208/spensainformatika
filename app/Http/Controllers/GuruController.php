@@ -1222,7 +1222,7 @@ class GuruController extends Controller
         $request->validate([
             'kelas_id' => 'required|exists:kelas,id',
             'tanggal' => 'required|date',
-            'pertemuan' => 'required|integer|min:1',
+            'pertemuan' => 'required|string|max:50',
             'materi' => 'required|string|max:255',
             'tujuan_pembelajaran' => 'nullable|string',
             'kegiatan' => 'nullable|string',
@@ -1230,23 +1230,32 @@ class GuruController extends Controller
             'tindak_lanjut' => 'nullable|string',
         ]);
 
-        JurnalMengajar::updateOrCreate(
-            [
-                'kelas_id' => $request->kelas_id,
-                'tanggal' => $request->tanggal,
-                'pertemuan' => $request->pertemuan,
-            ],
-            [
-                'guru_id' => auth()->id(),
+        try {
+            $dataToSave = [
                 'materi' => $request->materi,
                 'tujuan_pembelajaran' => $request->tujuan_pembelajaran,
                 'kegiatan' => $request->kegiatan,
                 'catatan' => $request->catatan,
                 'tindak_lanjut' => $request->tindak_lanjut,
-            ]
-        );
+            ];
 
-        return back()->with('success', 'Jurnal mengajar berhasil disimpan!');
+            if (Schema::hasColumn('jurnal_mengajars', 'guru_id')) {
+                $dataToSave['guru_id'] = auth()->id();
+            }
+
+            JurnalMengajar::updateOrCreate(
+                [
+                    'kelas_id' => $request->kelas_id,
+                    'tanggal' => $request->tanggal,
+                    'pertemuan' => $request->pertemuan,
+                ],
+                $dataToSave
+            );
+
+            return back()->with('success', 'Jurnal mengajar berhasil disimpan!');
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['Gagal menyimpan jurnal mengajar: ' . $e->getMessage()]);
+        }
     }
 
     public function destroyJurnal($id)
