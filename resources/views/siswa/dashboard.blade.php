@@ -210,8 +210,8 @@
                         <img src="{{ auth()->user()->avatar_url }}" class="w-full h-full object-cover" alt="{{ auth()->user()->name }}">
                     </div>
                     <div class="flex-1">
-                        <input type="file" name="avatar" accept=".jpg,.jpeg,.png" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded p-1 bg-slate-50">
-                        <p class="text-[10px] text-slate-400 mt-1">Format: JPG, JPEG, PNG (Maksimal 2MB)</p>
+                        <input type="file" id="siswaAvatarInput" name="avatar" accept=".jpg,.jpeg,.png,.webp" onchange="compressSiswaAvatar(this)" class="w-full text-xs text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded p-1 bg-slate-50">
+                        <p class="text-[10px] text-slate-400 mt-1">Format: JPG, JPEG, PNG (Foto otomatis dioptimasi)</p>
                     </div>
                 </div>
             </div>
@@ -258,5 +258,53 @@
         </form>
     </div>
 </div>
+
+<script>
+function compressSiswaAvatar(input) {
+    if (!input.files || !input.files[0]) return;
+    const file = input.files[0];
+    if (file.size > 1024 * 1024) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const img = new Image();
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+                const maxDim = 800;
+
+                if (width > maxDim || height > maxDim) {
+                    if (width > height) {
+                        height = Math.round((height * maxDim) / width);
+                        width = maxDim;
+                    } else {
+                        width = Math.round((width * maxDim) / height);
+                        height = maxDim;
+                    }
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                canvas.toBlob(function(blob) {
+                    if (blob) {
+                        const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+                            type: 'image/jpeg',
+                            lastModified: Date.now()
+                        });
+                        const dataTransfer = new DataTransfer();
+                        dataTransfer.items.add(compressedFile);
+                        input.files = dataTransfer.files;
+                    }
+                }, 'image/jpeg', 0.85);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+</script>
 
 @endsection
