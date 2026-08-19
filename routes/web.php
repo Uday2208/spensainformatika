@@ -53,6 +53,10 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::delete('/absensi/delete-by-date', [GuruController::class, 'destroyAbsensiByDate']);
         Route::get('/penilaian-harian', [GuruController::class, 'penilaianHarian']);
         Route::post('/penilaian-harian', [GuruController::class, 'storePenilaianHarian']);
+        Route::put('/penilaian-harian/{id}', [GuruController::class, 'updatePenilaianHarianSingle'])->name('guru.penilaian-harian.update-single');
+        Route::delete('/penilaian-harian/{id}', [GuruController::class, 'destroyPenilaianHarianSingle'])->name('guru.penilaian-harian.destroy-single');
+        Route::get('/rekap-keaktifan', [GuruController::class, 'rekapKeaktifan'])->name('guru.rekap-keaktifan');
+        Route::get('/rekap-keaktifan/export', [GuruController::class, 'exportRekapKeaktifan'])->name('guru.rekap-keaktifan.export');
         Route::get('/nilai', [GuruController::class, 'nilai']);
         Route::get('/nilai/export', [GuruController::class, 'exportNilai'])->name('guru.nilai.export');
         Route::get('/nilai/rata-ujian', [GuruController::class, 'getRataUjian'])->name('guru.nilai.rata-ujian');

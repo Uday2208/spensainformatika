@@ -240,6 +240,247 @@ class GuruController extends Controller
         }
     }
 
+    /**
+     * Memperbarui atau menyimpan satu record nilai keaktifan individu
+     */
+    public function updatePenilaianHarianSingle(Request $request, $id = null)
+    {
+        $request->validate([
+            'nilai' => 'required|numeric|min:0|max:100',
+            'catatan' => 'nullable|string|max:500',
+            'siswa_id' => 'nullable|exists:siswas,id',
+            'kelas_id' => 'nullable|exists:kelas,id',
+            'tanggal' => 'nullable|date',
+            'pertemuan' => 'nullable|string|max:50',
+        ]);
+
+        if ($id && $id !== 'new') {
+            $ph = PenilaianHarian::findOrFail($id);
+            $ph->update([
+                'nilai' => $request->nilai,
+                'catatan' => $request->catatan,
+            ]);
+            if ($request->filled('tanggal')) $ph->tanggal = $request->tanggal;
+            if ($request->filled('pertemuan')) $ph->pertemuan = $request->pertemuan;
+            $ph->save();
+        } else {
+            $ph = PenilaianHarian::updateOrCreate(
+                [
+                    'siswa_id' => $request->siswa_id,
+                    'tanggal' => $request->tanggal ?? date('Y-m-d'),
+                    'pertemuan' => $request->pertemuan ?? '1',
+                ],
+                [
+                    'kelas_id' => $request->kelas_id,
+                    'nilai' => $request->nilai,
+                    'catatan' => $request->catatan,
+                ]
+            );
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Nilai keaktifan berhasil diperbarui!',
+                'data' => $ph
+            ]);
+        }
+
+        return back()->with('success', 'Nilai keaktifan berhasil diperbarui!');
+    }
+
+    /**
+     * Menghapus satu data log keaktifan
+     */
+    public function destroyPenilaianHarianSingle($id)
+    {
+        $ph = PenilaianHarian::findOrFail($id);
+        $ph->delete();
+
+        return back()->with('success', 'Data log keaktifan berhasil dihapus!');
+    }
+
+    /**
+     * Halaman Rekapitulasi Nilai Keaktifan Siswa (Tampilan Matriks & Log)
+     */
+    public function rekapKeaktifan(Request $request)
+    {
+        $kelas = Kelas::all();
+        $kelas_id = $request->kelas_id;
+        $nama_siswa = $request->nama_siswa;
+
+        $daftarPertemuan = collect();
+        $siswas = collect();
+        $ringkasanKelas = collect();
+        $stats = [
+            'total_siswa' => 0,
+            'total_pertemuan' => 0,
+            'total_log' => 0,
+            'rata_kelas' => 0,
+            'sangat_aktif' => 0,
+            'perlu_bimbingan' => 0,
+        ];
+
+        if ($kelas_id) {
+            // Ambil daftar pertemuan yang unik di kelas ini
+            $daftarPertemuan = PenilaianHarian::where('kelas_id', $kelas_id)
+                ->select('pertemuan', DB::raw('MIN(tanggal) as tanggal'))
+                ->groupBy('pertemuan')
+                ->orderByRaw('CAST(pertemuan AS UNSIGNED) ASC, pertemuan ASC')
+                ->get();
+
+            $query = Siswa::where('kelas_id', $kelas_id)
+                ->with(['user', 'kelas', 'penilaianHarians' => function($q) use ($kelas_id) {
+                    $q->where('kelas_id', $kelas_id)->orderBy('tanggal', 'asc');
+                }]);
+
+            if ($nama_siswa) {
+                $query->where(function($q) use ($nama_siswa) {
+                    $q->where('nis', 'like', "%{$nama_siswa}%")
+                      ->orWhereHas('user', function($uq) use ($nama_siswa) {
+                          $uq->where('name', 'like', "%{$nama_siswa}%");
+                      });
+                });
+            }
+
+            $siswas = $query->get();
+
+            // Hitung agregasi statistik
+            $allPH = PenilaianHarian::where('kelas_id', $kelas_id)->get();
+            $totalLog = $allPH->count();
+            $rataKelas = $totalLog > 0 ? round($allPH->avg('nilai'), 1) : 0;
+
+            $sangatAktifCount = 0;
+            $perluBimbinganCount = 0;
+
+            foreach ($siswas as $s) {
+                $avgSiswa = $s->penilaianHarians->avg('nilai');
+                if ($avgSiswa !== null) {
+                    if ($avgSiswa >= 90) $sangatAktifCount++;
+                    if ($avgSiswa < 75) $perluBimbinganCount++;
+                }
+            }
+
+            $stats = [
+                'total_siswa' => $siswas->count(),
+                'total_pertemuan' => $daftarPertemuan->count(),
+                'total_log' => $totalLog,
+                'rata_kelas' => $rataKelas,
+                'sangat_aktif' => $sangatAktifCount,
+                'perlu_bimbingan' => $perluBimbinganCount,
+            ];
+        } else {
+            // Ringkasan per kelas jika belum memilih kelas tertentu
+            $ringkasanKelas = Kelas::withCount('siswas')->get()->map(function($k) {
+                $logs = PenilaianHarian::where('kelas_id', $k->id)->get();
+                $k->total_pertemuan = $logs->pluck('pertemuan')->unique()->count();
+                $k->total_log = $logs->count();
+                $k->rata_keaktifan = $logs->count() > 0 ? round($logs->avg('nilai'), 1) : 0;
+                return $k;
+            });
+        }
+
+        return view('guru.rekap-keaktifan', compact(
+            'kelas', 'kelas_id', 'nama_siswa', 'daftarPertemuan', 'siswas', 'stats', 'ringkasanKelas'
+        ));
+    }
+
+    /**
+     * Ekspor Rekapitulasi Nilai Keaktifan Siswa ke CSV / Excel
+     */
+    public function exportRekapKeaktifan(Request $request)
+    {
+        $kelas_id = $request->kelas_id;
+        if (!$kelas_id) {
+            return back()->withErrors(['Pilih kelas terlebih dahulu untuk mengekspor rekap keaktifan!']);
+        }
+
+        $kelas = Kelas::findOrFail($kelas_id);
+        $daftarPertemuan = PenilaianHarian::where('kelas_id', $kelas_id)
+            ->select('pertemuan', DB::raw('MIN(tanggal) as tanggal'))
+            ->groupBy('pertemuan')
+            ->orderByRaw('CAST(pertemuan AS UNSIGNED) ASC, pertemuan ASC')
+            ->get();
+
+        $siswas = Siswa::where('kelas_id', $kelas_id)
+            ->with(['user', 'penilaianHarians' => function($q) use ($kelas_id) {
+                $q->where('kelas_id', $kelas_id);
+            }])
+            ->get();
+
+        $filename = "rekap_keaktifan_" . str_replace(' ', '_', $kelas->nama_kelas) . "_" . date('Ymd_His') . ".csv";
+        $headers = [
+            "Content-type"        => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($siswas, $daftarPertemuan, $kelas) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // UTF-8 BOM for Excel
+
+            // Judul Dokumen
+            fputcsv($file, ["REKAPITULASI NILAI KEAKTIFAN SISWA - KELAS " . strtoupper($kelas->nama_kelas)], ';');
+            fputcsv($file, ["Tanggal Unduh: " . now()->translatedFormat('d F Y H:i')], ';');
+            fputcsv($file, [], ';');
+
+            // Header Kolom
+            $headers = ['No', 'NIS', 'Nama Siswa', 'Kelas'];
+            foreach ($daftarPertemuan as $p) {
+                $headers[] = "P-" . $p->pertemuan . " (" . ($p->tanggal ? \Carbon\Carbon::parse($p->tanggal)->format('d/m') : '-') . ")";
+            }
+            $headers[] = 'Rata-Rata Keaktifan';
+            $headers[] = 'Predikat / Kategori';
+            fputcsv($file, $headers, ';');
+
+            // Baris Data
+            foreach ($siswas as $idx => $siswa) {
+                $phMap = $siswa->penilaianHarians->keyBy('pertemuan');
+                $avg = $siswa->penilaianHarians->avg('nilai');
+                $avgFormatted = $avg !== null ? number_format($avg, 1) : '-';
+
+                $predikat = '-';
+                if ($avg !== null) {
+                    if ($avg >= 90) $predikat = 'Sangat Aktif (A)';
+                    elseif ($avg >= 80) $predikat = 'Aktif (B)';
+                    elseif ($avg >= 70) $predikat = 'Cukup (C)';
+                    else $predikat = 'Kurang / Pasif (D)';
+                }
+
+                $row = [
+                    $idx + 1,
+                    $siswa->nis,
+                    $siswa->user->name ?? '-',
+                    $kelas->nama_kelas
+                ];
+
+                foreach ($daftarPertemuan as $p) {
+                    $item = $phMap->get($p->pertemuan);
+                    if ($item) {
+                        $val = $item->nilai;
+                        if (!empty($item->catatan)) {
+                            $val .= " [" . $item->catatan . "]";
+                        }
+                        $row[] = $val;
+                    } else {
+                        $row[] = '-';
+                    }
+                }
+
+                $row[] = $avgFormatted;
+                $row[] = $predikat;
+
+                fputcsv($file, $row, ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
     public function nilai()
     {
         $kelas = Kelas::all();

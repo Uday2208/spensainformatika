@@ -24,11 +24,8 @@ Homestead.yaml
 Thumbs.db
 
 # Uploaded user content
-/public/uploads/artikel/*
-/public/uploads/avatars/*
-/public/uploads/logo/*
-/public/uploads/materi/*
-/uploads/avatars/*
+/public/uploads/*
+/uploads/*
 !/public/uploads/artikel/.gitkeep
 !/public/uploads/avatars/.gitkeep
 !/public/uploads/logo/.gitkeep

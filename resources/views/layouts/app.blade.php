@@ -143,8 +143,8 @@
                 <p class="px-3 text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">Laporan & Pengaturan</p>
                 <div class="space-y-1">
                     <!-- Dropdown Laporan -->
-                    <div x-data="{ openLaporan: {{ request()->is('app/rekap-absensi*') ? 'true' : 'false' }} }" class="space-y-1">
-                        <button @click="openLaporan = !openLaporan" class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/rekap-absensi*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
+                    <div x-data="{ openLaporan: {{ request()->is('app/rekap*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="openLaporan = !openLaporan" class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/rekap*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
                             <div class="flex items-center gap-3">
                                 <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                                 Laporan
@@ -156,6 +156,9 @@
                         <div x-show="openLaporan" x-collapse class="pl-11 pr-3 py-1 space-y-1">
                             <a href="{{ url('/app/rekap-absensi') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/rekap-absensi*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
                                 Rekap Presensi
+                            </a>
+                            <a href="{{ url('/app/rekap-keaktifan') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/rekap-keaktifan*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
+                                Rekap Nilai Keaktifan
                             </a>
                             <a href="{{ url('/app/rekap-jurnal') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/rekap-jurnal*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
                                 Rekap Jurnal Mengajar
