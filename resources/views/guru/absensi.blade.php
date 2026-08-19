@@ -82,12 +82,66 @@
 @else
 
 {{-- ============================================================
-     KARTU JURNAL MENGAJAR HARIAN
+     KARTU JURNAL MENGAJAR HARIAN (DENGAN AUTO-LOAD TEMPLATE)
      ============================================================ --}}
 @php
     $currentJurnal = \App\Models\JurnalMengajar::where('kelas_id', $kelas_id)->where('tanggal', $tanggal)->first();
+    $bankJurnals = \App\Models\JurnalMengajar::with('kelas')
+        ->select('pertemuan', 'materi', 'tujuan_pembelajaran', 'kegiatan', 'tindak_lanjut', 'kelas_id', 'tanggal')
+        ->orderBy('tanggal', 'desc')
+        ->get()
+        ->unique('pertemuan')
+        ->values();
 @endphp
-<div x-data="{ openJurnal: {{ ($currentJurnal || $errors->any()) ? 'true' : 'false' }} }" class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5 overflow-hidden">
+<div x-data="{ 
+        openJurnal: {{ ($currentJurnal || $errors->any()) ? 'true' : 'false' }},
+        openBankModal: false,
+        templateFound: false,
+        templateData: null,
+        loadingTemplate: false,
+        copySuccess: false,
+        checkTemplate(p) {
+            if (!p || p.trim() === '') {
+                this.templateFound = false;
+                this.templateData = null;
+                return;
+            }
+            this.loadingTemplate = true;
+            fetch('{{ route('guru.jurnal.get-template') }}?pertemuan=' + encodeURIComponent(p) + '&exclude_kelas_id={{ $kelas_id }}')
+                .then(res => res.json())
+                .then(data => {
+                    this.loadingTemplate = false;
+                    if (data.found) {
+                        this.templateFound = true;
+                        this.templateData = data;
+                    } else {
+                        this.templateFound = false;
+                        this.templateData = null;
+                    }
+                })
+                .catch(() => {
+                    this.loadingTemplate = false;
+                    this.templateFound = false;
+                });
+        },
+        applyTemplate(t) {
+            const data = t || this.templateData;
+            if (!data) return;
+            if (document.getElementById('input_jurnal_materi')) document.getElementById('input_jurnal_materi').value = data.materi || '';
+            if (document.getElementById('input_jurnal_tujuan')) document.getElementById('input_jurnal_tujuan').value = data.tujuan_pembelajaran || '';
+            if (document.getElementById('input_jurnal_kegiatan')) document.getElementById('input_jurnal_kegiatan').value = data.kegiatan || '';
+            if (document.getElementById('input_jurnal_tindak_lanjut')) document.getElementById('input_jurnal_tindak_lanjut').value = data.tindak_lanjut || '';
+            if (data.pertemuan && document.getElementById('input_jurnal_pertemuan')) {
+                document.getElementById('input_jurnal_pertemuan').value = data.pertemuan;
+            }
+            this.copySuccess = true;
+            setTimeout(() => this.copySuccess = false, 4000);
+            this.openBankModal = false;
+        }
+     }" 
+     x-init="checkTemplate(document.getElementById('input_jurnal_pertemuan') ? document.getElementById('input_jurnal_pertemuan').value : '1')"
+     class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 mb-5 overflow-hidden">
+     
     <div class="flex items-center justify-between cursor-pointer" @click="openJurnal = !openJurnal">
         <div class="flex items-center gap-2.5">
             <div class="w-8 h-8 bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center font-bold">
@@ -111,51 +165,172 @@
     </div>
 
     <div x-show="openJurnal" x-collapse class="mt-4 pt-4 border-t border-slate-100">
+        
+        {{-- Banner Notifikasi Berhasil Salin Template --}}
+        <div x-show="copySuccess" x-transition class="mb-3 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center justify-between gap-2 text-emerald-800 text-xs font-semibold">
+            <div class="flex items-center gap-2">
+                <span>✨</span>
+                <span>Data materi, tujuan, dan kegiatan belajar berhasil disalin ke formulir!</span>
+            </div>
+            <span class="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded-full font-bold">Siap Disimpan</span>
+        </div>
+
+        {{-- Banner Pintar: Rekomendasi Template dari Kelas Lain --}}
+        <div x-show="templateFound && templateData" x-transition class="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
+            <div class="flex items-start gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">
+                    💡
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-blue-900 leading-tight">
+                        Ditemukan template <span x-text="'Pertemuan ' + (templateData ? templateData.pertemuan || '' : '')"></span> dari <span class="text-indigo-700 font-extrabold" x-text="templateData ? templateData.kelas_asal : ''"></span>
+                        <span class="text-[10px] text-slate-500 font-normal" x-text="templateData ? '(' + templateData.tanggal_asal + ')' : ''"></span>
+                    </p>
+                    <p class="text-[11px] text-blue-700 mt-0.5 line-clamp-1">
+                        Materi: <strong x-text="templateData ? templateData.materi : ''"></strong>
+                    </p>
+                </div>
+            </div>
+            <button type="button" 
+                    @click="applyTemplate()" 
+                    class="btn-compact bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-lg text-xs shadow-xs flex items-center gap-1.5 whitespace-nowrap active:scale-95 transition-all">
+                <span>📋 Salin & Gunakan Data Ini</span>
+            </button>
+        </div>
+
         <form action="{{ route('guru.jurnal.store') }}" method="POST" class="space-y-4">
             @csrf
             <input type="hidden" name="kelas_id" value="{{ $kelas_id }}">
             <input type="hidden" name="tanggal" value="{{ $tanggal }}">
 
-            <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <div class="sm:col-span-1">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Pertemuan Ke- *</label>
-                    <input type="number" name="pertemuan" min="1" max="50" required value="{{ $currentJurnal->pertemuan ?? 1 }}" class="input-compact w-full bg-slate-50 font-bold">
-                </div>
+            <div class="grid grid-cols-1 sm:grid-cols-12 gap-4">
                 <div class="sm:col-span-3">
-                    <label class="block text-xs font-semibold text-slate-600 mb-1">Materi / Topik Pembelajaran *</label>
-                    <input type="text" name="materi" required value="{{ $currentJurnal->materi ?? '' }}" placeholder="Contoh: Berpikir Komputasional / Pengenalan Algoritma" class="input-compact w-full bg-slate-50">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-600">Pertemuan Ke- *</label>
+                        <span x-show="loadingTemplate" class="text-[10px] text-blue-600 animate-pulse font-medium">Mengecek...</span>
+                    </div>
+                    <input type="text" 
+                           name="pertemuan" 
+                           id="input_jurnal_pertemuan"
+                           required 
+                           value="{{ $currentJurnal->pertemuan ?? 1 }}" 
+                           @input.debounce.400ms="checkTemplate($event.target.value)"
+                           placeholder="Contoh: 1 atau Bab 1" 
+                           class="input-compact w-full bg-slate-50 font-bold min-h-[40px]">
+                </div>
+                <div class="sm:col-span-9">
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-semibold text-slate-600">Materi / Topik Pembelajaran *</label>
+                        @if($bankJurnals->count() > 0)
+                        <button type="button" 
+                                @click="openBankModal = true"
+                                class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 hover:underline flex items-center gap-1">
+                            <span>📂 Bank Riwayat Pertemuan</span>
+                        </button>
+                        @endif
+                    </div>
+                    <input type="text" 
+                           name="materi" 
+                           id="input_jurnal_materi"
+                           required 
+                           value="{{ $currentJurnal->materi ?? '' }}" 
+                           placeholder="Contoh: Berpikir Komputasional / Pengenalan Algoritma" 
+                           class="input-compact w-full bg-slate-50 min-h-[40px]">
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tujuan Pembelajaran</label>
-                    <textarea name="tujuan_pembelajaran" rows="2" placeholder="Tujuan yang diharapkan dicapai siswa..." class="input-compact w-full bg-slate-50">{{ $currentJurnal->tujuan_pembelajaran ?? '' }}</textarea>
+                    <textarea name="tujuan_pembelajaran" 
+                              id="input_jurnal_tujuan" 
+                              rows="2" 
+                              placeholder="Tujuan yang diharapkan dicapai siswa..." 
+                              class="input-compact w-full bg-slate-50">{{ $currentJurnal->tujuan_pembelajaran ?? '' }}</textarea>
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Kegiatan Pembelajaran</label>
-                    <textarea name="kegiatan" rows="2" placeholder="Uraian singkat aktivitas belajar mengajar..." class="input-compact w-full bg-slate-50">{{ $currentJurnal->kegiatan ?? '' }}</textarea>
+                    <textarea name="kegiatan" 
+                              id="input_jurnal_kegiatan" 
+                              rows="2" 
+                              placeholder="Uraian singkat aktivitas belajar mengajar..." 
+                              class="input-compact w-full bg-slate-50">{{ $currentJurnal->kegiatan ?? '' }}</textarea>
                 </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan / Kejadian di Kelas</label>
-                    <input type="text" name="catatan" value="{{ $currentJurnal->catatan ?? '' }}" placeholder="Catatan khusus situasi kelas jika ada..." class="input-compact w-full bg-slate-50">
+                    <input type="text" 
+                           name="catatan" 
+                           value="{{ $currentJurnal->catatan ?? '' }}" 
+                           placeholder="Catatan khusus situasi kelas jika ada..." 
+                           class="input-compact w-full bg-slate-50 min-h-[40px]">
                 </div>
                 <div>
                     <label class="block text-xs font-semibold text-slate-600 mb-1">Tindak Lanjut</label>
-                    <input type="text" name="tindak_lanjut" value="{{ $currentJurnal->tindak_lanjut ?? '' }}" placeholder="Tindak lanjut untuk pertemuan berikutnya..." class="input-compact w-full bg-slate-50">
+                    <input type="text" 
+                           name="tindak_lanjut" 
+                           id="input_jurnal_tindak_lanjut" 
+                           value="{{ $currentJurnal->tindak_lanjut ?? '' }}" 
+                           placeholder="Tindak lanjut untuk pertemuan berikutnya..." 
+                           class="input-compact w-full bg-slate-50 min-h-[40px]">
                 </div>
             </div>
 
-            <div class="flex justify-end gap-2 pt-1">
-                <button type="submit" class="btn-compact bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
+            <div class="flex justify-between items-center pt-2 border-t border-slate-100">
+                <div class="text-[11px] text-slate-400">
+                    💡 <span>Materi dan kegiatan yang Anda simpan di kelas ini dapat langsung disalin di kelas lainnya.</span>
+                </div>
+                <button type="submit" class="btn-compact bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-xs flex items-center gap-1.5 min-h-[40px] active:scale-95 transition-all">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                     Simpan Jurnal Mengajar
                 </button>
             </div>
         </form>
+
+        {{-- Modal Bank Riwayat Jurnal Pertemuan --}}
+        <div x-show="openBankModal" 
+             x-transition 
+             class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4" 
+             style="display: none;">
+            <div class="bg-white rounded-3xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden" @click.outside="openBankModal = false">
+                <div class="px-5 py-4 bg-gradient-to-r from-blue-900 to-indigo-900 text-white flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <span class="text-base">📂</span>
+                        <h4 class="font-bold text-sm">Pilih Dari Bank Riwayat Jurnal</h4>
+                    </div>
+                    <button type="button" @click="openBankModal = false" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center text-xs">✕</button>
+                </div>
+                <div class="p-4 max-h-80 overflow-y-auto divide-y divide-slate-100">
+                    @forelse($bankJurnals as $bj)
+                    <div class="py-3 flex items-start justify-between gap-3 hover:bg-slate-50 px-2 rounded-xl transition-colors">
+                        <div class="min-w-0 flex-1">
+                            <div class="flex items-center gap-2 mb-0.5">
+                                <span class="px-2 py-0.5 rounded-md bg-blue-100 text-blue-800 text-[10px] font-bold">P-{{ $bj->pertemuan }}</span>
+                                <span class="text-[10px] text-slate-400">{{ $bj->kelas->nama_kelas ?? '-' }} • {{ \Carbon\Carbon::parse($bj->tanggal)->format('d/m/Y') }}</span>
+                            </div>
+                            <p class="font-bold text-slate-800 text-xs truncate">{{ $bj->materi }}</p>
+                            @if($bj->tujuan_pembelajaran)
+                            <p class="text-[11px] text-slate-500 line-clamp-1 mt-0.5">{{ $bj->tujuan_pembelajaran }}</p>
+                            @endif
+                        </div>
+                        <button type="button" 
+                                @click="applyTemplate({{ json_encode($bj) }})" 
+                                class="btn-compact bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex-shrink-0">
+                            Pilih
+                        </button>
+                    </div>
+                    @empty
+                    <p class="text-center text-slate-400 text-xs py-6">Belum ada riwayat jurnal tersimpan.</p>
+                    @endforelse
+                </div>
+                <div class="p-3 bg-slate-50 border-t border-slate-100 flex justify-end">
+                    <button type="button" @click="openBankModal = false" class="px-4 py-1.5 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold hover:bg-slate-300 transition-colors">Tutup</button>
+                </div>
+            </div>
+        </div>
+
     </div>
 </div>
 

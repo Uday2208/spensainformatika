@@ -1217,6 +1217,53 @@ class GuruController extends Controller
         return view('guru.rekap-jurnal', compact('kelas', 'kelas_id', 'jurnals'));
     }
 
+    /**
+     * Mengambil template jurnal mengajar dari pertemuan yang sama di kelas lain
+     */
+    public function getJurnalTemplate(Request $request)
+    {
+        $pertemuan = trim($request->pertemuan ?? '');
+        $excludeKelasId = $request->exclude_kelas_id;
+
+        if ($pertemuan === '') {
+            // Ambil daftar riwayat template unik seluruh pertemuan yang pernah diisi
+            $templates = JurnalMengajar::with('kelas')
+                ->select('pertemuan', 'materi', 'tujuan_pembelajaran', 'kegiatan', 'tindak_lanjut', 'kelas_id', 'tanggal')
+                ->orderBy('tanggal', 'desc')
+                ->get()
+                ->unique('pertemuan')
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'templates' => $templates
+            ]);
+        }
+
+        // Cari data pertemuan spesifik terakhir dari kelas mana pun
+        $query = JurnalMengajar::with('kelas')->where('pertemuan', $pertemuan);
+        
+        if ($excludeKelasId) {
+            $query->orderByRaw("CASE WHEN kelas_id != ? THEN 0 ELSE 1 END", [$excludeKelasId]);
+        }
+        
+        $jurnal = $query->orderBy('tanggal', 'desc')->orderBy('id', 'desc')->first();
+
+        if ($jurnal) {
+            return response()->json([
+                'found' => true,
+                'kelas_asal' => $jurnal->kelas->nama_kelas ?? 'Kelas Lain',
+                'tanggal_asal' => \Carbon\Carbon::parse($jurnal->tanggal)->translatedFormat('d M Y'),
+                'materi' => $jurnal->materi ?? '',
+                'tujuan_pembelajaran' => $jurnal->tujuan_pembelajaran ?? '',
+                'kegiatan' => $jurnal->kegiatan ?? '',
+                'tindak_lanjut' => $jurnal->tindak_lanjut ?? '',
+            ]);
+        }
+
+        return response()->json(['found' => false]);
+    }
+
     public function storeJurnal(Request $request)
     {
         $request->validate([
