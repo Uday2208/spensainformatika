@@ -106,10 +106,12 @@ Route::prefix('app')->middleware('auth')->group(function () {
 
     // Siswa Routes
     Route::middleware('role:siswa')->group(function () {
-        Route::get('/dashboard-siswa', [SiswaController::class, 'dashboard']);
+        Route::get('/dashboard-siswa', [SiswaController::class, 'dashboard'])->name('siswa.dashboard');
+        Route::get('/materi-siswa', [SiswaController::class, 'materi'])->name('siswa.materi');
         Route::get('/kehadiran-saya', [SiswaController::class, 'kehadiranSaya'])->name('siswa.kehadiran');
-        Route::put('/profil', [SiswaController::class, 'updateProfil']);
-        Route::post('/komentar', [SiswaController::class, 'storeKomentar']);
+        Route::get('/profil-saya', [SiswaController::class, 'profilSaya'])->name('siswa.profil');
+        Route::put('/profil', [SiswaController::class, 'updateProfil'])->name('siswa.profil.update');
+        Route::post('/komentar', [SiswaController::class, 'storeKomentar'])->name('siswa.komentar.store');
 
         // ============ UJIAN HARIAN (SISWA) ============
         Route::get('/ujian-siswa', [UjianSiswaController::class, 'index'])->name('siswa.ujian.index');

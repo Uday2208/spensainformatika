@@ -71,16 +71,44 @@ class SiswaController extends Controller
                 ->count();
         }
 
-        // Menggunakan select() spesifik kolom yang dibutuhkan Blade dan get() biasa untuk menghindari bug cursor()
-        $materis = Materi::select('id', 'judul', 'deskripsi', 'foto', 'file_materi', 'link', 'created_at')
-            ->orderBy('created_at', 'desc')
-            ->get();
-
         return view('siswa.dashboard', compact(
-            'siswa', 'nilais', 'kkm', 'materis',
+            'siswa', 'nilais', 'kkm',
             'totalAbsen', 'hadir', 'sakit', 'izin', 'dispen', 'alpha',
             'persentaseHadir', 'rataKeaktifan', 'ujianAktifCount'
         ));
+    }
+
+    /**
+     * Halaman Khusus Materi Pembelajaran Siswa
+     */
+    public function materi(Request $request)
+    {
+        $siswa = Auth::user()->siswa()->with(['kelas'])->first();
+        
+        $query = Materi::select('id', 'judul', 'deskripsi', 'foto', 'file_materi', 'link', 'created_at')
+            ->orderBy('created_at', 'desc');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('judul', 'like', "%{$search}%")
+                  ->orWhere('deskripsi', 'like', "%{$search}%");
+            });
+        }
+
+        $materis = $query->paginate(12)->withQueryString();
+
+        return view('siswa.materi', compact('siswa', 'materis'));
+    }
+
+    /**
+     * Halaman Pengaturan Akun & Profil Siswa
+     */
+    public function profilSaya()
+    {
+        $siswa = Auth::user()->siswa()->with(['kelas'])->first();
+        $user = Auth::user();
+        return view('siswa.profil', compact('siswa', 'user'));
     }
 
     public function updateProfil(Request $request)

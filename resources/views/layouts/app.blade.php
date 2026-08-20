@@ -178,16 +178,24 @@
                 <p class="px-3 text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">Menu Siswa</p>
                 <div class="space-y-1">
                     <a href="{{ url('/app/dashboard-siswa') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/dashboard-siswa') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
-                        Dashboard Siswa
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>
+                        Dashboard & Rapor
+                    </a>
+                    <a href="{{ url('/app/materi-siswa') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/materi-siswa*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
+                        Materi Belajar
+                    </a>
+                    <a href="{{ url('/app/ujian-siswa') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/ujian-siswa*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                        Ujian Harian
                     </a>
                     <a href="{{ url('/app/kehadiran-saya') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/kehadiran-saya*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
                         <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
                         Kehadiran Saya
                     </a>
-                    <a href="{{ url('/app/ujian-siswa') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/ujian-siswa*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
-                        Ujian Harian
+                    <a href="{{ url('/app/profil-saya') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/profil-saya*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
+                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                        Akun & Profil
                     </a>
                 </div>
             </div>
@@ -243,6 +251,15 @@
 
                         <!-- Action Items -->
                         <div class="py-1">
+                            @if(Auth::user()->isSiswa())
+                            <a href="{{ url('/app/profil-saya') }}" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
+                                <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                Pengaturan Akun
+                            </a>
+                            @endif
+
                             <button @click="avatarModalOpen = true; userMenuOpen = false" class="w-full flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors text-left">
                                 <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
