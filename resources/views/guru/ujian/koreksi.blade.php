@@ -17,18 +17,45 @@
 </div>
 @endif
 
-<div class="mb-4 flex items-center justify-between">
+<div class="mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
     <div>
+        <div class="flex items-center gap-2 mb-1">
+            <span class="text-xs bg-slate-100 text-slate-600 font-extrabold px-2 py-0.5 rounded-md border border-slate-200 uppercase">{{ $ujian->bab }}</span>
+            <span class="text-xs text-slate-400 font-semibold">KKM: {{ $kkm }}</span>
+        </div>
         <h2 class="text-lg font-bold text-slate-800">{{ $ujian->judul }}</h2>
-        <p class="text-xs text-slate-500">Materi/Bab: {{ $ujian->bab }} | Masukkan nilai total essay (0-100) untuk masing-masing siswa di bawah ini.</p>
+        <p class="text-xs text-slate-500 mt-0.5">Masukkan skor nilai essay (0–100) per siswa di bawah ini.</p>
     </div>
-    <a href="{{ route('guru.ujian.index') }}" class="btn-compact bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold text-xs py-1.5 px-3 rounded shadow-sm">Kembali</a>
+    <div class="flex items-center gap-2">
+        <a href="{{ route('guru.hasil.show', $ujian->id) }}" class="btn-compact bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs py-2 px-3.5 rounded-xl transition-all">← Kembali ke Hasil</a>
+    </div>
 </div>
+
+<!-- Tab Pemilih Kelas -->
+@if(isset($kelasList) && $kelasList->count() > 0)
+<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4">
+    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap mr-1">Rombel:</span>
+    <a href="{{ route('guru.ujian.koreksi', $ujian->id) }}" 
+       class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all {{ empty($kelas_id) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+        Semua Kelas
+    </a>
+    @foreach($kelasList as $k)
+    <a href="{{ route('guru.ujian.koreksi', $ujian->id) }}?kelas_id={{ $k->id }}" 
+       class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all {{ (isset($kelas_id) && $kelas_id == $k->id) ? 'bg-indigo-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+        Kelas {{ $k->nama_kelas }}
+    </a>
+    @endforeach
+</div>
+@endif
 
 <form action="{{ route('guru.ujian.koreksi.store', $ujian->id) }}" method="POST">
     @csrf
 
-    <div class="bg-white rounded border border-slate-200 shadow-sm p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
+        <div class="flex justify-between items-center pb-3 mb-4 border-b border-slate-100">
+            <h3 class="font-bold text-slate-700 text-sm">Lembar Jawaban Essay Siswa ({{ $hasilUjians->count() }} Peserta)</h3>
+            <span class="text-xs text-slate-400">Tips: Nilai akhir akan dihitung otomatis secara proporsional.</span>
+        </div>
         
         <div class="space-y-6">
             @forelse($hasilUjians as $index => $hasil)

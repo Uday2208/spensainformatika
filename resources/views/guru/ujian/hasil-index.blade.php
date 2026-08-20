@@ -106,6 +106,13 @@
             </tbody>
         </table>
     </div>
+
+    @if($ujians->hasPages())
+    <div class="p-4 border-t border-slate-100 flex justify-between items-center text-xs text-slate-500">
+        <span>Menampilkan {{ $ujians->firstItem() }} - {{ $ujians->lastItem() }} dari {{ $ujians->total() }} paket ujian</span>
+        {{ $ujians->links() }}
+    </div>
+    @endif
 </div>
 
 @endsection

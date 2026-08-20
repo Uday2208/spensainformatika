@@ -50,6 +50,86 @@
     </div>
 </div>
 
+{{-- ============================================================
+     STATISTIK ANALISIS KELAS (KPI CARDS)
+     ============================================================ --}}
+@if(isset($stats) && $stats['total_peserta'] > 0)
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+    <!-- Rata-rata Nilai -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Rata-Rata</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black {{ $stats['rata_kelas'] >= $kkm ? 'text-emerald-600' : 'text-amber-600' }}">
+                {{ number_format($stats['rata_kelas'], 1) }}
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700">Skor</span>
+        </div>
+    </div>
+
+    <!-- Tingkat Ketuntasan -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Ketuntasan</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black {{ $stats['persen_tuntas'] >= 75 ? 'text-emerald-600' : 'text-red-600' }}">
+                {{ $stats['persen_tuntas'] }}%
+            </span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">KKM: {{ $kkm }}</span>
+        </div>
+    </div>
+
+    <!-- Tuntas / Lulus -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Tuntas (≥ KKM)</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-emerald-700">{{ $stats['tuntas_count'] }}</span>
+            <span class="text-[10px] font-bold text-slate-400">Siswa</span>
+        </div>
+    </div>
+
+    <!-- Remedial -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-red-500">Remedial (&lt; KKM)</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-red-600">{{ $stats['belum_tuntas_count'] }}</span>
+            <span class="text-[10px] font-bold text-slate-400">Siswa</span>
+        </div>
+    </div>
+
+    <!-- Nilai Tertinggi -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-indigo-600">Tertinggi</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-indigo-700">{{ number_format($stats['nilai_tertinggi'], 1) }}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700">Maks</span>
+        </div>
+    </div>
+
+    <!-- Nilai Terendah -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-col justify-between">
+        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500">Terendah</span>
+        <div class="flex items-baseline justify-between mt-1">
+            <span class="text-2xl font-black text-slate-700">{{ number_format($stats['nilai_terendah'], 1) }}</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Min</span>
+        </div>
+    </div>
+</div>
+@endif
+
+<!-- Tab Pemilih Kelas Cepat -->
+<div class="flex items-center gap-2 overflow-x-auto pb-2 mb-4">
+    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap mr-1">Rombel:</span>
+    <a href="{{ route('guru.hasil.show', $ujian->id) }}" 
+       class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all {{ !$selectedKelas ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+        Semua Kelas
+    </a>
+    @foreach($kelasList as $k)
+    <a href="{{ route('guru.hasil.show', $ujian->id) }}?kelas_id={{ $k->id }}" 
+       class="px-3.5 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all {{ $selectedKelas == $k->id ? 'bg-blue-600 text-white shadow-sm' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50' }}">
+        Kelas {{ $k->nama_kelas }}
+    </a>
+    @endforeach
+</div>
+
 <!-- Student Results Table -->
 <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-5" x-data="{ selectedKelas: '{{ $selectedKelas }}' }">
     <div class="flex flex-wrap justify-between items-center pb-4 mb-4 border-b border-slate-100 gap-4">

@@ -389,9 +389,10 @@ class UjianController extends Controller
 
     // ==================== KOREKSI ====================
 
-    public function koreksiEssay($id)
+    public function koreksiEssay(Request $request, $id)
     {
         $ujian = Ujian::with('soals')->findOrFail($id);
+        $kelas_id = $request->kelas_id;
 
         if (!$ujian->isSelesai()) {
             return back()->withErrors(['Akhiri ujian terlebih dahulu sebelum koreksi.']);
@@ -399,22 +400,33 @@ class UjianController extends Controller
 
         $soalEssay = $ujian->soals()->where('tipe', 'essay')->get();
 
-        $hasilUjians = HasilUjian::where('ujian_id', $id)
-            ->with(['siswa.user', 'siswa.kelas'])
-            ->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
+        $query = HasilUjian::where('ujian_id', $id)
+            ->with(['siswa.user', 'siswa.kelas']);
+
+        if ($kelas_id) {
+            $query->whereHas('siswa', function($q) use ($kelas_id) {
+                $q->where('kelas_id', $kelas_id);
+            });
+        }
+
+        $hasilUjians = $query->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
             ->orderBy('created_at', 'desc')
             ->get();
 
-        // Get all essay answers
+        $siswaIds = $hasilUjians->pluck('siswa_id')->toArray();
+
+        // Get essay answers for displayed students only (lightweight query)
         $jawabanEssay = JawabanSiswa::where('ujian_id', $id)
+            ->whereIn('siswa_id', $siswaIds)
             ->whereHas('soal', fn($q) => $q->where('tipe', 'essay'))
             ->get()
             ->groupBy('siswa_id');
 
+        $kelasList = $ujian->kelasList->count() > 0 ? $ujian->kelasList : Kelas::orderBy('nama_kelas', 'asc')->get();
         $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
         $kkm = $kkmSetting ? $kkmSetting->value : 75;
 
-        return view('guru.ujian.koreksi', compact('ujian', 'soalEssay', 'hasilUjians', 'jawabanEssay', 'kkm'));
+        return view('guru.ujian.koreksi', compact('ujian', 'soalEssay', 'hasilUjians', 'jawabanEssay', 'kkm', 'kelasList', 'kelas_id'));
     }
 
     public function storeKoreksi(Request $request, $id)
@@ -588,10 +600,16 @@ class UjianController extends Controller
 
     public function indexHasil(Request $request)
     {
-        $query = Ujian::with(['kelasList', 'hasilUjians'])
+        $query = Ujian::with('kelasList')
             ->withCount([
                 'soals', 
                 'hasilUjians',
+                'hasilUjians as selesai_count' => function ($q) {
+                    $q->whereIn('status', ['selesai', 'dinilai']);
+                },
+                'hasilUjians as perlu_koreksi_count' => function ($q) {
+                    $q->where('status', 'selesai');
+                },
                 'soals as soal_essay_count' => function ($q) {
                     $q->where('tipe', 'essay');
                 }
@@ -602,11 +620,10 @@ class UjianController extends Controller
             $query->where('status', $request->status);
         }
 
-        $ujians = $query->get();
+        $ujians = $query->paginate(15)->withQueryString();
 
         foreach ($ujians as $ujian) {
-            $ujian->selesai_count = $ujian->hasilUjians->whereIn('status', ['selesai', 'dinilai'])->count();
-            $ujian->perlu_koreksi = $ujian->soal_essay_count > 0 && $ujian->hasilUjians->where('status', 'selesai')->count() > 0;
+            $ujian->perlu_koreksi = ($ujian->soal_essay_count > 0 && $ujian->perlu_koreksi_count > 0);
         }
 
         return view('guru.ujian.hasil-index', compact('ujians'));
@@ -639,7 +656,26 @@ class UjianController extends Controller
         $kkm = $kkmSetting ? (float)$kkmSetting->value : 75;
         $hasEssay = $ujian->soalEssay()->count() > 0;
 
-        return view('guru.ujian.hasil-show', compact('ujian', 'hasilUjians', 'kelasList', 'selectedKelas', 'kkm', 'hasEssay'));
+        // Hitung statistik analisis hasil ujian
+        $totalPeserta = $hasilUjians->count();
+        $rataKelas = $totalPeserta > 0 ? round($hasilUjians->avg('nilai_akhir'), 1) : 0;
+        $nilaiTertinggi = $totalPeserta > 0 ? round($hasilUjians->max('nilai_akhir'), 1) : 0;
+        $nilaiTerendah = $totalPeserta > 0 ? round($hasilUjians->min('nilai_akhir'), 1) : 0;
+        $tuntasCount = $hasilUjians->where('nilai_akhir', '>=', $kkm)->count();
+        $belumTuntasCount = $hasilUjians->where('nilai_akhir', '<', $kkm)->count();
+        $persenTuntas = $totalPeserta > 0 ? round(($tuntasCount / $totalPeserta) * 100, 1) : 0;
+
+        $stats = [
+            'total_peserta' => $totalPeserta,
+            'rata_kelas' => $rataKelas,
+            'nilai_tertinggi' => $nilaiTertinggi,
+            'nilai_terendah' => $nilaiTerendah,
+            'tuntas_count' => $tuntasCount,
+            'belum_tuntas_count' => $belumTuntasCount,
+            'persen_tuntas' => $persenTuntas,
+        ];
+
+        return view('guru.ujian.hasil-show', compact('ujian', 'hasilUjians', 'kelasList', 'selectedKelas', 'kkm', 'hasEssay', 'stats'));
     }
 
     public function detailJawabanSiswa($id, $siswaId)
