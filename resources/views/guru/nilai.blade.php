@@ -23,7 +23,7 @@
 </div>
 @endif
 
-<div x-data="{ tab: 'input', pHarian: 20, pTugas: 20, pQuiz: 20, pProyek: 20, pUlangan: 20, useHarian: true, useTugas: true, useQuiz: true, useProyek: true, editModalOpen: false, kkmModalOpen: false, editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }, sertakanUlangan: false, rataUjian: {} }">
+<div x-data="{ tab: 'input', pHarian: 20, pTugas: 20, pQuiz: 20, pProyek: 20, pUlangan: 20, useHarian: true, useTugas: true, useQuiz: true, useProyek: true, editModalOpen: false, kkmModalOpen: false, editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }, sertakanUlangan: false, rataUjian: {}, isSaving: false }">
     
     <!-- Tabs -->
     <div class="flex flex-col sm:flex-row justify-between mb-4 border-b border-slate-200">
@@ -48,7 +48,7 @@
 
     <!-- Tab Input -->
     <div x-show="tab === 'input'" class="bg-white rounded-b rounded-tr border border-slate-200 shadow-sm p-4">
-    <form action="{{ url('/app/nilai') }}" method="POST" id="nilaiForm">
+    <form action="{{ url('/app/nilai') }}" method="POST" id="nilaiForm" @submit="isSaving = true">
         @csrf
         <input type="hidden" name="force_update" id="inputForceUpdate" value="0">
         
@@ -211,14 +211,13 @@
         </div>
 
         <!-- Bottom Action Bar -->
-        <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg" x-data="{ isSaving: false }">
+        <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg">
             <div class="text-xs text-slate-600">
                 <span class="font-bold text-slate-800">📌 Catatan Simpan Nilai:</span> Pastikan total persentase bobot adalah <strong class="text-blue-700 font-bold">100%</strong> sebelum menekan tombol simpan.
             </div>
             <button type="submit" 
-                    @click="isSaving = true"
-                    :disabled="isSaving || (pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100" 
-                    :class="(isSaving || (pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100) ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md cursor-pointer'" 
+                    :disabled="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100" 
+                    :class="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100 ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md cursor-pointer'" 
                     class="px-6 py-2.5 rounded-lg border text-sm flex items-center justify-center gap-2 transition-all w-full md:w-auto">
                 <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                 <svg x-show="isSaving" style="display:none;" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
