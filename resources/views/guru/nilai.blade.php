@@ -23,7 +23,41 @@
 </div>
 @endif
 
-<div x-data="{ tab: 'input', pHarian: 20, pTugas: 20, pQuiz: 20, pProyek: 20, pUlangan: 20, useHarian: true, useTugas: true, useQuiz: true, useProyek: true, editModalOpen: false, kkmModalOpen: false, editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }, sertakanUlangan: false, rataUjian: {}, isSaving: false }">
+<div x-data="{ 
+    tab: 'input', 
+    pHarian: 20, 
+    pTugas: 20, 
+    pQuiz: 20, 
+    pProyek: 20, 
+    pUlangan: 20, 
+    useHarian: true, 
+    useTugas: true, 
+    useQuiz: true, 
+    useProyek: true, 
+    editModalOpen: false, 
+    kkmModalOpen: false, 
+    editData: { id: '', siswa_id: '', siswa_nama: '', bab: '', harian: 80, tugas: 0, quiz: 0, proyek: 0, ulangan: 0 }, 
+    sertakanUlangan: false, 
+    rataUjian: {}, 
+    isSaving: false,
+    totalBobotAktif() {
+        return (this.useHarian ? (parseFloat(this.pHarian) || 0) : 0)
+             + (this.useTugas ? (parseFloat(this.pTugas) || 0) : 0)
+             + (this.useQuiz ? (parseFloat(this.pQuiz) || 0) : 0)
+             + (this.useProyek ? (parseFloat(this.pProyek) || 0) : 0)
+             + (this.sertakanUlangan ? (parseFloat(this.pUlangan) || 0) : 0);
+    },
+    hitungNilai(harian, tugas, quiz, proyek, ulangan) {
+        const tot = this.totalBobotAktif();
+        if (tot <= 0) return '0.0';
+        const skor = (this.useHarian ? (parseFloat(harian || 0) * (parseFloat(this.pHarian) || 0)) : 0)
+                   + (this.useTugas ? (parseFloat(tugas || 0) * (parseFloat(this.pTugas) || 0)) : 0)
+                   + (this.useQuiz ? (parseFloat(quiz || 0) * (parseFloat(this.pQuiz) || 0)) : 0)
+                   + (this.useProyek ? (parseFloat(proyek || 0) * (parseFloat(this.pProyek) || 0)) : 0)
+                   + (this.sertakanUlangan ? (parseFloat(ulangan || 0) * (parseFloat(this.pUlangan) || 0)) : 0);
+        return (skor / tot).toFixed(1);
+    }
+}">
     
     <!-- Tabs -->
     <div class="flex flex-col sm:flex-row justify-between mb-4 border-b border-slate-200">
@@ -84,7 +118,7 @@
                 <div class="flex space-x-2 bg-blue-50 p-1.5 rounded border border-blue-100">
                     <div class="flex flex-col items-center">
                         <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan Penilaian Harian">
-                            <input type="checkbox" x-model="useHarian" @change="if(!useHarian) { pHarian = 0; }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <input type="checkbox" x-model="useHarian" @change="if(!useHarian) { pHarian = 0; } else if(pHarian <= 0) { pHarian = 20; }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
                             <span class="text-[10px] font-bold text-blue-800">Harian (%)</span>
                         </label>
                         <input type="number" name="p_harian" x-model.number="pHarian" min="0" max="100" x-show="useHarian" :disabled="!useHarian" class="input-compact w-16 text-center text-xs">
@@ -92,7 +126,7 @@
                     </div>
                     <div class="flex flex-col items-center">
                         <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Tugas">
-                            <input type="checkbox" x-model="useTugas" @change="if(!useTugas) { pTugas = 0; document.querySelectorAll('.input-tugas').forEach(el => el.value = 0) }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <input type="checkbox" x-model="useTugas" @change="if(!useTugas) { pTugas = 0; document.querySelectorAll('.input-tugas').forEach(el => el.value = 0); } else if(pTugas <= 0) { pTugas = 20; }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
                             <span class="text-[10px] font-bold text-blue-800">Tugas (%)</span>
                         </label>
                         <input type="number" name="p_tugas" x-model.number="pTugas" min="0" max="100" x-show="useTugas" :disabled="!useTugas" class="input-compact w-16 text-center text-xs">
@@ -100,7 +134,7 @@
                     </div>
                     <div class="flex flex-col items-center">
                         <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Quiz">
-                            <input type="checkbox" x-model="useQuiz" @change="if(!useQuiz) { pQuiz = 0; document.querySelectorAll('.input-quiz').forEach(el => el.value = 0) }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <input type="checkbox" x-model="useQuiz" @change="if(!useQuiz) { pQuiz = 0; document.querySelectorAll('.input-quiz').forEach(el => el.value = 0); } else if(pQuiz <= 0) { pQuiz = 20; }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
                             <span class="text-[10px] font-bold text-blue-800">Quiz (%)</span>
                         </label>
                         <input type="number" name="p_quiz" x-model.number="pQuiz" min="0" max="100" x-show="useQuiz" :disabled="!useQuiz" class="input-compact w-16 text-center text-xs">
@@ -108,7 +142,7 @@
                     </div>
                     <div class="flex flex-col items-center">
                         <label class="flex items-center gap-1 cursor-pointer mb-1" title="Centang untuk mengaktifkan nilai Proyek">
-                            <input type="checkbox" x-model="useProyek" @change="if(!useProyek) { pProyek = 0; document.querySelectorAll('.input-proyek').forEach(el => el.value = 0) }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <input type="checkbox" x-model="useProyek" @change="if(!useProyek) { pProyek = 0; document.querySelectorAll('.input-proyek').forEach(el => el.value = 0); } else if(pProyek <= 0) { pProyek = 20; }" class="w-3 h-3 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
                             <span class="text-[10px] font-bold text-blue-800">Proyek (%)</span>
                         </label>
                         <input type="number" name="p_proyek" x-model.number="pProyek" min="0" max="100" x-show="useProyek" :disabled="!useProyek" class="input-compact w-16 text-center text-xs">
@@ -126,12 +160,12 @@
                 <div class="flex items-center gap-2">
                     <div class="flex items-center bg-blue-50 px-3 py-2 rounded border border-blue-100 self-center">
                         <label class="flex items-center gap-2 cursor-pointer select-none">
-                            <input type="checkbox" name="sertakan_ulangan" value="1" x-model="sertakanUlangan" @change="if(sertakanUlangan) { fetchRataUjian(); }" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
+                            <input type="checkbox" name="sertakan_ulangan" value="1" x-model="sertakanUlangan" @change="if(sertakanUlangan) { if(pUlangan <= 0) { pUlangan = 20; } fetchRataUjian(); } else { pUlangan = 0; }" class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 cursor-pointer">
                             <span class="text-xs font-bold text-blue-800">Sertakan Nilai Ulangan</span>
                         </label>
                     </div>
 
-                    <button type="button" @click="sertakanUlangan = true; fetchRataUjian(true);" onclick="enableSertakanUlanganAndFetch(true)" class="btn-compact bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs whitespace-nowrap shadow-sm flex items-center gap-1 border border-amber-600 self-center py-2 px-3 rounded-lg cursor-pointer" title="Tarik dan tampilkan nilai ulangan siswa dari database">
+                    <button type="button" @click="sertakanUlangan = true; if(pUlangan <= 0) { pUlangan = 20; } fetchRataUjian(true);" onclick="enableSertakanUlanganAndFetch(true)" class="btn-compact bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs whitespace-nowrap shadow-sm flex items-center gap-1 border border-amber-600 self-center py-2 px-3 rounded-lg cursor-pointer" title="Tarik dan tampilkan nilai ulangan siswa dari database">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         📥 Tarik Nilai
                     </button>
@@ -140,12 +174,13 @@
         </div>
 
         <!-- Info Formula -->
-        <div class="mb-3 text-xs flex justify-between items-center" :class="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) === 100 ? 'text-slate-500' : 'text-red-600 font-bold'">
-            <span class="italic">* Rumus: 
-                <span x-show="!sertakanUlangan">(Rata2 Harian × <span x-text="pHarian"></span>%) + (Tugas × <span x-text="pTugas"></span>%) + (Quiz × <span x-text="pQuiz"></span>%) + (Proyek × <span x-text="pProyek"></span>%)</span>
-                <span x-show="sertakanUlangan">(Rata2 Harian × <span x-text="pHarian"></span>%) + (Tugas × <span x-text="pTugas"></span>%) + (Quiz × <span x-text="pQuiz"></span>%) + (Proyek × <span x-text="pProyek"></span>%) + (Rata2 Ulangan × <span x-text="pUlangan"></span>%)</span>
+        <div class="mb-3 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1.5 p-2 rounded-lg border" :class="totalBobotAktif() > 0 ? 'bg-blue-50/70 border-blue-200 text-blue-900' : 'bg-red-50 border-red-200 text-red-600 font-bold'">
+            <span class="italic">
+                * <strong>Rumus Otomatis:</strong> Nilai Akhir dihitung proporsional dari 
+                <span class="font-bold text-blue-800 underline">komponen yang dicentang saja</span> 
+                (Total Bobot Aktif: <strong class="text-blue-950 font-black" x-text="totalBobotAktif() + '%'"></strong>).
             </span>
-            <span x-show="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100">Peringatan: Total persentase saat ini adalah <span x-text="pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)"></span>% (Seharusnya 100%)</span>
+            <span x-show="totalBobotAktif() <= 0" class="text-red-600 font-extrabold">⚠️ Minimal centang 1 komponen penilaian!</span>
         </div>
 
         <!-- Compact Table -->
@@ -188,11 +223,11 @@
                             <span class="input-ulangan-val inline-block py-1 px-2.5 rounded-lg font-mono font-black text-xs shadow-xs" :class="ulangan > 0 ? 'bg-green-100 border border-green-400 text-green-900' : 'bg-slate-100 border border-slate-300 text-slate-500'" x-text="parseFloat(ulangan).toFixed(1)">0.0</span>
                             <input type="hidden" name="nilai[{{ $siswa->id }}][ulangan]" :value="ulangan">
                         </td>
-                        <td class="p-1" :class="( (useHarian ? (harian * (pHarian/100)) : 0) + (useTugas ? (tugas * (pTugas/100)) : 0) + (useQuiz ? (quiz * (pQuiz/100)) : 0) + (useProyek ? (proyek * (pProyek/100)) : 0) + (sertakanUlangan ? (ulangan * (pUlangan/100)) : 0) ) < {{ $kkm }} ? 'bg-red-50/50' : 'bg-blue-50/50'">
+                        <td class="p-1" :class="parseFloat(hitungNilai(harian, tugas, quiz, proyek, ulangan)) < {{ $kkm }} ? 'bg-red-50/50' : 'bg-blue-50/50'">
                             <div class="w-full text-center font-bold py-1" 
                                  title="Prediksi Nilai Akhir"
-                                 :class="( (useHarian ? (harian * (pHarian/100)) : 0) + (useTugas ? (tugas * (pTugas/100)) : 0) + (useQuiz ? (quiz * (pQuiz/100)) : 0) + (useProyek ? (proyek * (pProyek/100)) : 0) + (sertakanUlangan ? (ulangan * (pUlangan/100)) : 0) ) < {{ $kkm }} ? 'text-red-600' : 'text-blue-700'"
-                                 x-text="( (useHarian ? (parseFloat(harian || 0) * (pHarian/100)) : 0) + (useTugas ? (parseFloat(tugas || 0) * (pTugas/100)) : 0) + (useQuiz ? (parseFloat(quiz || 0) * (pQuiz/100)) : 0) + (useProyek ? (parseFloat(proyek || 0) * (pProyek/100)) : 0) + (sertakanUlangan ? (parseFloat(ulangan || 0) * (pUlangan/100)) : 0) ).toFixed(1)">0.0</div>
+                                 :class="parseFloat(hitungNilai(harian, tugas, quiz, proyek, ulangan)) < {{ $kkm }} ? 'text-red-600' : 'text-blue-700'"
+                                 x-text="hitungNilai(harian, tugas, quiz, proyek, ulangan)">0.0</div>
                         </td>
                     </tr>
                     @empty
@@ -213,11 +248,11 @@
         <!-- Bottom Action Bar -->
         <div class="mt-4 pt-4 border-t border-slate-200 flex flex-col md:flex-row items-center justify-between gap-3 bg-slate-50 p-4 rounded-lg">
             <div class="text-xs text-slate-600">
-                <span class="font-bold text-slate-800">📌 Catatan Simpan Nilai:</span> Pastikan total persentase bobot adalah <strong class="text-blue-700 font-bold">100%</strong> sebelum menekan tombol simpan.
+                <span class="font-bold text-slate-800">📌 Catatan Simpan Nilai:</span> Nilai akhir otomatis dihitung dari persentase komponen yang dicentang.
             </div>
             <button type="submit" 
-                    :disabled="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100" 
-                    :class="(pHarian + pTugas + pQuiz + pProyek + (sertakanUlangan ? pUlangan : 0)) !== 100 ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md cursor-pointer'" 
+                    :disabled="totalBobotAktif() <= 0" 
+                    :class="totalBobotAktif() <= 0 ? 'bg-slate-300 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 text-white font-black shadow-md cursor-pointer'" 
                     class="px-6 py-2.5 rounded-lg border text-sm flex items-center justify-center gap-2 transition-all w-full md:w-auto">
                 <svg x-show="!isSaving" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"></path></svg>
                 <svg x-show="isSaving" style="display:none;" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -446,7 +481,7 @@
 
                 <div class="mb-4 text-xs text-blue-800 bg-blue-50/80 p-3 rounded-lg border border-blue-100 flex justify-between items-center">
                     <span class="font-semibold" title="Prediksi Nilai Akhir">Prediksi Nilai Akhir Baru:</span>
-                    <strong class="text-base text-blue-900 font-black" x-text="( (useHarian ? (parseFloat(editData.harian || 0) * (pHarian/100)) : 0) + (useTugas ? (parseFloat(editData.tugas || 0) * (pTugas/100)) : 0) + (useQuiz ? (parseFloat(editData.quiz || 0) * (pQuiz/100)) : 0) + (useProyek ? (parseFloat(editData.proyek || 0) * (pProyek/100)) : 0) + (sertakanUlangan ? (parseFloat(editData.ulangan || 0) * (pUlangan/100)) : 0) ).toFixed(1)">0.0</strong>
+                    <strong class="text-base text-blue-900 font-black" x-text="hitungNilai(editData.harian, editData.tugas, editData.quiz, editData.proyek, editData.ulangan)">0.0</strong>
                 </div>
                 
                 <div class="flex justify-end gap-2">

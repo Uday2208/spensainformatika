@@ -597,26 +597,24 @@ class GuruController extends Controller
         $request->validate([
             'bab' => 'required|string',
             'nilai' => 'required|array',
-            'p_harian' => 'required|numeric|min:0|max:100',
-            'p_tugas' => 'required|numeric|min:0|max:100',
-            'p_quiz' => 'required|numeric|min:0|max:100',
-            'p_proyek' => 'required|numeric|min:0|max:100',
+            'p_harian' => 'nullable|numeric|min:0|max:100',
+            'p_tugas' => 'nullable|numeric|min:0|max:100',
+            'p_quiz' => 'nullable|numeric|min:0|max:100',
+            'p_proyek' => 'nullable|numeric|min:0|max:100',
             'p_ulangan' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $sertakan_ulangan = $request->has('sertakan_ulangan') && $request->sertakan_ulangan == 1;
         $p_ulangan_raw = $sertakan_ulangan ? (float)($request->p_ulangan ?? 0) : 0;
+        $p_harian_raw = (float)($request->p_harian ?? 0);
+        $p_tugas_raw = (float)($request->p_tugas ?? 0);
+        $p_quiz_raw = (float)($request->p_quiz ?? 0);
+        $p_proyek_raw = (float)($request->p_proyek ?? 0);
 
-        $totalBobot = round((float)$request->p_harian + (float)$request->p_tugas + (float)$request->p_quiz + (float)$request->p_proyek + $p_ulangan_raw, 2);
-        if ($totalBobot != 100) {
-            return back()->withErrors(['Total persentase bobot harus tepat 100%']);
+        $totalBobotAktif = $p_harian_raw + $p_tugas_raw + $p_quiz_raw + $p_proyek_raw + $p_ulangan_raw;
+        if ($totalBobotAktif <= 0) {
+            return back()->withErrors(['Minimal pilih satu komponen penilaian dengan bobot lebih dari 0%.']);
         }
-
-        $p_harian = $request->p_harian / 100;
-        $p_tugas = $request->p_tugas / 100;
-        $p_quiz = $request->p_quiz / 100;
-        $p_proyek = $request->p_proyek / 100;
-        $p_ulangan = $p_ulangan_raw / 100;
 
         $siswaIds = array_keys($request->nilai);
         $babReq = trim($request->bab);
@@ -675,29 +673,40 @@ class GuruController extends Controller
         $now = now();
 
         foreach ($request->nilai as $siswa_id => $data) {
-            $tugas = (isset($data['tugas']) && $data['tugas'] !== '') ? (float)$data['tugas'] : 0;
-            $quiz = (isset($data['quiz']) && $data['quiz'] !== '') ? (float)$data['quiz'] : 0;
-            $proyek = (isset($data['proyek']) && $data['proyek'] !== '') ? (float)$data['proyek'] : 0;
+            $tugas = (isset($data['tugas']) && $data['tugas'] !== '' && $p_tugas_raw > 0) ? (float)$data['tugas'] : 0;
+            $quiz = (isset($data['quiz']) && $data['quiz'] !== '' && $p_quiz_raw > 0) ? (float)$data['quiz'] : 0;
+            $proyek = (isset($data['proyek']) && $data['proyek'] !== '' && $p_proyek_raw > 0) ? (float)$data['proyek'] : 0;
             
-            // Hitung rata-rata nilai harian
-            if (isset($data['harian']) && $data['harian'] !== '' && $data['harian'] !== null) {
-                $rata_harian = (float)$data['harian'];
+            // Hitung rata-rata nilai harian (jika bobot harian aktif)
+            if ($p_harian_raw > 0) {
+                if (isset($data['harian']) && $data['harian'] !== '' && $data['harian'] !== null) {
+                    $rata_harian = (float)$data['harian'];
+                } else {
+                    $rata_harian = (float)($rataHarianMap[$siswa_id] ?? 80);
+                }
             } else {
-                $rata_harian = (float)($rataHarianMap[$siswa_id] ?? 80);
+                $rata_harian = 0;
             }
 
-            // Hitung rata-rata nilai ulangan (prioritaskan input form jika diisi/ditarik)
-            if (isset($data['ulangan']) && $data['ulangan'] !== '' && $data['ulangan'] !== null && (float)$data['ulangan'] > 0) {
-                $rata_ulangan = (float)$data['ulangan'];
+            // Hitung rata-rata nilai ulangan (jika sertakan ulangan & bobot aktif)
+            if ($sertakan_ulangan && $p_ulangan_raw > 0) {
+                if (isset($data['ulangan']) && $data['ulangan'] !== '' && $data['ulangan'] !== null && (float)$data['ulangan'] > 0) {
+                    $rata_ulangan = (float)$data['ulangan'];
+                } else {
+                    $rata_ulangan = $rataUlanganMap[$siswa_id] ?? ($existingNilaiMap[$siswa_id] ?? 0);
+                }
             } else {
-                $rata_ulangan = $rataUlanganMap[$siswa_id] ?? ($existingNilaiMap[$siswa_id] ?? 0);
+                $rata_ulangan = 0;
             }
 
-            if ($sertakan_ulangan) {
-                $nilai_akhir = ($rata_harian * $p_harian) + ($tugas * $p_tugas) + ($quiz * $p_quiz) + ($proyek * $p_proyek) + ($rata_ulangan * $p_ulangan);
-            } else {
-                $nilai_akhir = ($rata_harian * $p_harian) + ($tugas * $p_tugas) + ($quiz * $p_quiz) + ($proyek * $p_proyek);
-            }
+            // Hitung nilai akhir ternormalisasi hanya dari bobot komponen yang aktif
+            $totalNilaiBobot = ($rata_harian * $p_harian_raw)
+                             + ($tugas * $p_tugas_raw)
+                             + ($quiz * $p_quiz_raw)
+                             + ($proyek * $p_proyek_raw)
+                             + ($rata_ulangan * $p_ulangan_raw);
+
+            $nilai_akhir = round($totalNilaiBobot / $totalBobotAktif, 2);
 
             $upsertData[] = [
                 'siswa_id' => $siswa_id,
@@ -732,72 +741,84 @@ class GuruController extends Controller
             'quiz' => 'required|numeric|min:0|max:100',
             'proyek' => 'required|numeric|min:0|max:100',
             'ulangan' => 'nullable|numeric|min:0|max:100',
-            'p_harian' => 'required|numeric|min:0|max:100',
-            'p_tugas' => 'required|numeric|min:0|max:100',
-            'p_quiz' => 'required|numeric|min:0|max:100',
-            'p_proyek' => 'required|numeric|min:0|max:100',
+            'p_harian' => 'nullable|numeric|min:0|max:100',
+            'p_tugas' => 'nullable|numeric|min:0|max:100',
+            'p_quiz' => 'nullable|numeric|min:0|max:100',
+            'p_proyek' => 'nullable|numeric|min:0|max:100',
             'p_ulangan' => 'nullable|numeric|min:0|max:100',
         ]);
 
         $sertakan_ulangan = $request->has('sertakan_ulangan') && $request->sertakan_ulangan == 1;
         $p_ulangan_raw = $sertakan_ulangan ? (float)($request->p_ulangan ?? 0) : 0;
+        $p_harian_raw = (float)($request->p_harian ?? 0);
+        $p_tugas_raw = (float)($request->p_tugas ?? 0);
+        $p_quiz_raw = (float)($request->p_quiz ?? 0);
+        $p_proyek_raw = (float)($request->p_proyek ?? 0);
 
-        $totalBobot = round((float)$request->p_harian + (float)$request->p_tugas + (float)$request->p_quiz + (float)$request->p_proyek + $p_ulangan_raw, 2);
-        if ($totalBobot != 100) {
-            return back()->withErrors(['Total persentase bobot harus tepat 100%']);
+        $totalBobotAktif = $p_harian_raw + $p_tugas_raw + $p_quiz_raw + $p_proyek_raw + $p_ulangan_raw;
+        if ($totalBobotAktif <= 0) {
+            return back()->withErrors(['Minimal pilih satu komponen penilaian dengan bobot lebih dari 0%.']);
         }
-
-        $p_harian = $request->p_harian / 100;
-        $p_tugas = $request->p_tugas / 100;
-        $p_quiz = $request->p_quiz / 100;
-        $p_proyek = $request->p_proyek / 100;
-        $p_ulangan = $p_ulangan_raw / 100;
 
         $nilai = Nilai::findOrFail($id);
         
-        if ($request->has('harian') && $request->harian !== null && $request->harian !== '') {
-            $rata_harian = (float)$request->harian;
-        } else {
-            $rata_harian = PenilaianHarian::where('siswa_id', $nilai->siswa_id)->avg('nilai') ?? 80;
-        }
-
-        if ($request->has('ulangan') && $request->ulangan !== null && $request->ulangan !== '') {
-            $rata_ulangan = (float)$request->ulangan;
-        } else {
-            $babReq = trim($request->bab);
-            $queryUlangan = DB::table('hasil_ujians')
-                ->join('ujians', 'hasil_ujians.ujian_id', '=', 'ujians.id')
-                ->where('hasil_ujians.siswa_id', $nilai->siswa_id)
-                ->whereIn('hasil_ujians.status', ['selesai', 'dinilai']);
-
-            if ($babReq !== '') {
-                $queryUlangan->where(function($q) use ($babReq) {
-                    $q->where('ujians.bab', $babReq)
-                      ->orWhere(DB::raw('LOWER(ujians.bab)'), strtolower($babReq))
-                      ->orWhere('ujians.bab', 'LIKE', '%' . $babReq . '%')
-                      ->orWhere('ujians.judul', 'LIKE', '%' . $babReq . '%');
-                });
+        if ($p_harian_raw > 0) {
+            if ($request->has('harian') && $request->harian !== null && $request->harian !== '') {
+                $rata_harian = (float)$request->harian;
+            } else {
+                $rata_harian = PenilaianHarian::where('siswa_id', $nilai->siswa_id)->avg('nilai') ?? 80;
             }
-
-            $rata_ulangan = $queryUlangan->avg('hasil_ujians.nilai_akhir');
-
-            if ($rata_ulangan === null) {
-                $rata_ulangan = $nilai->ulangan ?? 0;
-            }
-        }
-
-        if ($sertakan_ulangan) {
-            $nilai_akhir = ($rata_harian * $p_harian) + ($request->tugas * $p_tugas) + ($request->quiz * $p_quiz) + ($request->proyek * $p_proyek) + ($rata_ulangan * $p_ulangan);
         } else {
-            $nilai_akhir = ($rata_harian * $p_harian) + ($request->tugas * $p_tugas) + ($request->quiz * $p_quiz) + ($request->proyek * $p_proyek);
+            $rata_harian = 0;
         }
+
+        if ($sertakan_ulangan && $p_ulangan_raw > 0) {
+            if ($request->has('ulangan') && $request->ulangan !== null && $request->ulangan !== '') {
+                $rata_ulangan = (float)$request->ulangan;
+            } else {
+                $babReq = trim($request->bab);
+                $queryUlangan = DB::table('hasil_ujians')
+                    ->join('ujians', 'hasil_ujians.ujian_id', '=', 'ujians.id')
+                    ->where('hasil_ujians.siswa_id', $nilai->siswa_id)
+                    ->whereIn('hasil_ujians.status', ['selesai', 'dinilai']);
+
+                if ($babReq !== '') {
+                    $queryUlangan->where(function($q) use ($babReq) {
+                        $q->where('ujians.bab', $babReq)
+                          ->orWhere(DB::raw('LOWER(ujians.bab)'), strtolower($babReq))
+                          ->orWhere('ujians.bab', 'LIKE', '%' . $babReq . '%')
+                          ->orWhere('ujians.judul', 'LIKE', '%' . $babReq . '%');
+                    });
+                }
+
+                $rata_ulangan = $queryUlangan->avg('hasil_ujians.nilai_akhir');
+
+                if ($rata_ulangan === null) {
+                    $rata_ulangan = $nilai->ulangan ?? 0;
+                }
+            }
+        } else {
+            $rata_ulangan = 0;
+        }
+
+        $tugas = $p_tugas_raw > 0 ? (float)$request->tugas : 0;
+        $quiz = $p_quiz_raw > 0 ? (float)$request->quiz : 0;
+        $proyek = $p_proyek_raw > 0 ? (float)$request->proyek : 0;
+
+        $totalNilaiBobot = ($rata_harian * $p_harian_raw)
+                         + ($tugas * $p_tugas_raw)
+                         + ($quiz * $p_quiz_raw)
+                         + ($proyek * $p_proyek_raw)
+                         + ((float)$rata_ulangan * $p_ulangan_raw);
+
+        $nilai_akhir = round($totalNilaiBobot / $totalBobotAktif, 2);
 
         $nilai->update([
             'bab' => $request->bab,
-            'tugas' => $request->tugas,
-            'quiz' => $request->quiz,
-            'proyek' => $request->proyek,
-            'ulangan' => round($rata_ulangan, 2),
+            'tugas' => round($tugas, 2),
+            'quiz' => round($quiz, 2),
+            'proyek' => round($proyek, 2),
+            'ulangan' => round((float)$rata_ulangan, 2),
             'nilai_akhir' => round($nilai_akhir, 2),
         ]);
 
