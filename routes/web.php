@@ -107,8 +107,9 @@ Route::prefix('app')->middleware('auth')->group(function () {
     // Siswa Routes
     Route::middleware('role:siswa')->group(function () {
         Route::get('/dashboard-siswa', [SiswaController::class, 'dashboard'])->name('siswa.dashboard');
-        Route::get('/materi-siswa', [SiswaController::class, 'materi'])->name('siswa.materi');
         Route::get('/kehadiran-saya', [SiswaController::class, 'kehadiranSaya'])->name('siswa.kehadiran');
+        Route::get('/materi-siswa', [SiswaController::class, 'materi'])->name('siswa.materi');
+        Route::get('/kesan-masukan', [SiswaController::class, 'kesanMasukan'])->name('siswa.kesan-masukan');
         Route::get('/profil-saya', [SiswaController::class, 'profilSaya'])->name('siswa.profil');
         Route::put('/profil', [SiswaController::class, 'updateProfil'])->name('siswa.profil.update');
         Route::post('/komentar', [SiswaController::class, 'storeKomentar'])->name('siswa.komentar.store');

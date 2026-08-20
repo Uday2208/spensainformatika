@@ -111,6 +111,35 @@ class SiswaController extends Controller
         return view('siswa.profil', compact('siswa', 'user'));
     }
 
+    /**
+     * Halaman Khusus Kesan & Masukan Pembelajaran Siswa
+     */
+    public function kesanMasukan()
+    {
+        $siswa = Auth::user()->siswa()->with(['kelas'])->first();
+        
+        $komentars = collect([]);
+        $canComment = true;
+        $daysRemaining = 0;
+
+        if ($siswa) {
+            $komentars = Komentar::where('siswa_id', $siswa->id)
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $lastKomentar = $komentars->first();
+            if ($lastKomentar) {
+                $daysDiff = Carbon::parse($lastKomentar->created_at)->diffInDays(Carbon::now());
+                if ($daysDiff < 7) {
+                    $canComment = false;
+                    $daysRemaining = 7 - $daysDiff;
+                }
+            }
+        }
+
+        return view('siswa.kesan-masukan', compact('siswa', 'komentars', 'canComment', 'daysRemaining'));
+    }
+
     public function updateProfil(Request $request)
     {
         $user = Auth::user();

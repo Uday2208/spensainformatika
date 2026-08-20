@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Rapor & Dashboard Siswa')
-@section('page_title', '🎓 Dashboard & Rapor')
+@section('title', 'Dashboard')
+@section('page_title', '🎓 Dashboard')
 @section('content')
 
 @if(session('success'))
@@ -226,41 +226,6 @@
         </div>
         @endif
     </div>
-</div>
-
-{{-- ============================================================
-     3. TESTIMONI & MASUKAN SISWA (CARD DI BAGIAN BAWAH)
-     ============================================================ --}}
-<div class="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 sm:p-7">
-    <div class="flex items-center gap-3 mb-4 pb-3 border-b border-slate-100">
-        <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg font-bold">
-            💬
-        </div>
-        <div>
-            <h3 class="font-black text-slate-800 text-sm">Kirim Kesan & Masukan Pembelajaran</h3>
-            <p class="text-xs text-slate-400">Bagikan pengalaman belajar atau saran untuk meningkatkan KBM Informatika.</p>
-        </div>
-    </div>
-    
-    <form action="{{ url('/app/komentar') }}" method="POST" class="max-w-2xl space-y-4">
-        @csrf
-        
-        <div>
-            <textarea name="isi_komentar" required maxlength="300" rows="3" class="input-compact w-full bg-slate-50 rounded-2xl p-3.5 text-xs border-slate-200 focus:bg-white" placeholder="Tuliskan pengalaman belajar, materi favorit, atau masukan untuk guru..."></textarea>
-            <p class="text-[11px] text-slate-400 mt-1">Maksimal 300 karakter. Masukan dapat dikirim 1 kali setiap 7 hari.</p>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
-            <div class="flex items-center">
-                <input type="checkbox" name="is_anonim" id="is_anonim" value="1" class="w-4 h-4 text-blue-600 bg-slate-100 border-slate-300 rounded focus:ring-blue-500 cursor-pointer">
-                <label for="is_anonim" class="ml-2 text-xs font-semibold text-slate-700 cursor-pointer">Tampilkan sebagai Anonim (sembunyikan nama)</label>
-            </div>
-            
-            <button type="submit" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl shadow-md active:scale-95 transition-all whitespace-nowrap">
-                Kirim Masukan
-            </button>
-        </div>
-    </form>
 </div>
 
 @endsection
