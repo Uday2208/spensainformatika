@@ -70,8 +70,11 @@
         <!-- Username Login -->
         <div>
             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Username Login</label>
-            <input type="text" name="username" value="{{ $user->username }}" required class="input-compact w-full bg-slate-50 rounded-2xl px-4 py-3 min-h-[44px] font-bold text-slate-800 text-sm border-slate-200 focus:bg-white">
-            <p class="text-[11px] text-slate-400 mt-1">Username standar adalah Nomer Induk Siswa (NIS).</p>
+            <input type="text" name="username" value="{{ $user->username }}" required placeholder="buat username tanpa spasi" class="input-compact w-full bg-slate-50 rounded-2xl px-4 py-3 min-h-[44px] font-bold text-slate-800 text-sm border-slate-200 focus:bg-white">
+            <p class="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
+                <span>💡</span>
+                <span>Username standar adalah NIS. <strong>Buat username tanpa spasi</strong>.</span>
+            </p>
         </div>
         
         <!-- Password Baru -->
