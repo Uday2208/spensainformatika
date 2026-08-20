@@ -159,8 +159,10 @@ class UjianSiswaController extends Controller
 
         // Hitung sisa waktu berdasarkan server time
         $startedAt = $hasil->started_at;
-        $durasiDetik = $ujian->durasi * 60;
-        $terpakai = now()->diffInSeconds($startedAt);
+        $durasiDetik = (int) $ujian->durasi * 60;
+        $terpakai = $startedAt ? max(0, now()->getTimestamp() - $startedAt->getTimestamp()) : 0;
+        $sisaDetik = max(0, $durasiDetik - $terpakai);
+
         return response()
             ->view('siswa.ujian.kerjakan', compact('ujian', 'hasil', 'jawabanTersimpan', 'sisaDetik'))
             ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
