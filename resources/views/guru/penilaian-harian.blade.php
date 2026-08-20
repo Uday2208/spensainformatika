@@ -108,6 +108,37 @@
 
 @elseif($kelas_id && $siswas->count() > 0)
 <div>
+    {{-- Banner Status Keterisian Nilai Keaktifan --}}
+    @if(isset($sudah_dinilai) && $sudah_dinilai)
+    <div class="flex items-center gap-3 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-4 mb-4 shadow-2xs">
+        <div class="w-8 h-8 bg-emerald-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
+        </div>
+        <div>
+            <p class="font-bold text-emerald-900 text-sm">
+                Data Nilai Keaktifan Tanggal <span class="font-black">{{ \Carbon\Carbon::parse($tanggal)->translatedFormat('d F Y') }}</span> Sudah Ada (Pertemuan Ke-{{ $existing_pertemuan ?? $pertemuan }}).
+            </p>
+            <p class="text-emerald-700 text-xs mt-0.5">
+                Nilai di bawah dimuat dari data tersimpan. Lakukan perubahan jika ingin mengoreksi nilai/catatan, lalu klik <strong>Simpan Perubahan Nilai Keaktifan</strong>.
+            </p>
+        </div>
+    </div>
+    @else
+    <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-5 py-3.5 mb-4 shadow-2xs">
+        <div class="w-8 h-8 bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 text-white shadow-xs">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+        </div>
+        <div>
+            <p class="font-bold text-blue-900 text-xs">
+                Belum ada data nilai keaktifan tersimpan untuk tanggal ini.
+            </p>
+            <p class="text-blue-700 text-[11px] mt-0.5">
+                Nilai awal otomatis disesuaikan dengan kehadiran siswa (Hadir = 80, Tidak Hadir = 70).
+            </p>
+        </div>
+    </div>
+    @endif
+
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
         <div>
             <h3 class="font-bold text-slate-700 text-sm">Daftar Keaktifan Siswa</h3>
@@ -182,9 +213,9 @@
         </div>
 
         <div class="flex justify-end">
-            <button type="submit" class="w-full lg:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-all active:scale-95 flex items-center justify-center min-h-[44px]">
+            <button type="submit" class="w-full lg:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-bold text-sm rounded-xl shadow-md shadow-blue-500/25 transition-all flex items-center justify-center min-h-[44px]">
                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"></path></svg>
-                SIMPAN KOREKSI PENILAIAN
+                {{ (isset($sudah_dinilai) && $sudah_dinilai) ? 'SIMPAN PERUBAHAN NILAI KEAKTIFAN' : 'SIMPAN NILAI KEAKTIFAN' }}
             </button>
         </div>
     </form>

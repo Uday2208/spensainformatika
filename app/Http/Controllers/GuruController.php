@@ -166,10 +166,12 @@ class GuruController extends Controller
         $kelas = Kelas::all();
         $kelas_id = $request->kelas_id;
         $tanggal = $request->tanggal ?? date('Y-m-d');
-        $pertemuan = $request->pertemuan ?? '1';
+        $pertemuan = $request->pertemuan;
 
         $siswas = collect();
         $absensi_belum_diisi = false;
+        $sudah_dinilai = false;
+        $existing_pertemuan = null;
 
         if ($kelas_id) {
             // Check if attendance has been taken for this class and date
@@ -181,19 +183,41 @@ class GuruController extends Controller
             if (!$cekAbsensi) {
                 $absensi_belum_diisi = true;
             } else {
+                // Cek apakah nilai keaktifan pada tanggal ini sudah pernah disimpan
+                $existingPH = PenilaianHarian::where('kelas_id', $kelas_id)
+                    ->where('tanggal', $tanggal)
+                    ->first();
+
+                if ($existingPH) {
+                    $sudah_dinilai = true;
+                    $existing_pertemuan = $existingPH->pertemuan;
+                    // Jika user tidak menentukan pertemuan secara spesifik via query parameter, gunakan pertemuan yang tersimpan
+                    if (!$pertemuan) {
+                        $pertemuan = $existing_pertemuan;
+                    }
+                }
+
+                if (!$pertemuan) {
+                    $pertemuan = '1';
+                }
+
                 $siswas = Siswa::where('kelas_id', $kelas_id)->with([
                     'user', 
-                    'penilaianHarians' => function($q) use ($tanggal, $pertemuan) {
-                        $q->where('tanggal', $tanggal)->where('pertemuan', $pertemuan);
+                    'penilaianHarians' => function($q) use ($tanggal) {
+                        $q->where('tanggal', $tanggal);
                     },
                     'absensis' => function($q) use ($tanggal) {
                         $q->where('tanggal', $tanggal);
                     }
                 ])->get();
             }
+        } else {
+            if (!$pertemuan) {
+                $pertemuan = '1';
+            }
         }
 
-        return view('guru.penilaian-harian', compact('kelas', 'kelas_id', 'tanggal', 'pertemuan', 'siswas', 'absensi_belum_diisi'));
+        return view('guru.penilaian-harian', compact('kelas', 'kelas_id', 'tanggal', 'pertemuan', 'siswas', 'absensi_belum_diisi', 'sudah_dinilai', 'existing_pertemuan'));
     }
 
     public function storePenilaianHarian(Request $request)
@@ -208,32 +232,23 @@ class GuruController extends Controller
         \Illuminate\Support\Facades\DB::beginTransaction();
 
         try {
-            $upsertData = [];
-            $now = now();
-
             foreach ($request->nilai as $siswa_id => $nilai) {
-                $upsertData[] = [
-                    'siswa_id' => $siswa_id,
-                    'kelas_id' => $request->kelas_id,
-                    'tanggal' => $request->tanggal,
-                    'pertemuan' => $request->pertemuan,
-                    'nilai' => $nilai,
-                    'catatan' => $request->catatan[$siswa_id] ?? null,
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ];
-            }
-
-            if (!empty($upsertData)) {
-                PenilaianHarian::upsert(
-                    $upsertData,
-                    ['siswa_id', 'tanggal', 'pertemuan'],
-                    ['kelas_id', 'nilai', 'catatan', 'updated_at']
+                PenilaianHarian::updateOrCreate(
+                    [
+                        'siswa_id' => $siswa_id,
+                        'tanggal' => $request->tanggal,
+                    ],
+                    [
+                        'kelas_id' => $request->kelas_id,
+                        'pertemuan' => $request->pertemuan,
+                        'nilai' => $nilai,
+                        'catatan' => $request->catatan[$siswa_id] ?? null,
+                    ]
                 );
             }
 
             \Illuminate\Support\Facades\DB::commit();
-            return back()->with('success', 'Penilaian harian berhasil disimpan!');
+            return back()->with('success', 'Penilaian keaktifan berhasil disimpan!');
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\DB::rollBack();
             return back()->withErrors(['Terjadi kesalahan saat menyimpan penilaian: ' . $e->getMessage()]);
@@ -268,10 +283,10 @@ class GuruController extends Controller
                 [
                     'siswa_id' => $request->siswa_id,
                     'tanggal' => $request->tanggal ?? date('Y-m-d'),
-                    'pertemuan' => $request->pertemuan ?? '1',
                 ],
                 [
                     'kelas_id' => $request->kelas_id,
+                    'pertemuan' => $request->pertemuan ?? '1',
                     'nilai' => $request->nilai,
                     'catatan' => $request->catatan,
                 ]
