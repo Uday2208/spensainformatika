@@ -882,16 +882,18 @@ class GuruController extends Controller
 
     public function dataSiswa(\Illuminate\Http\Request $request)
     {
-        $kelas = Kelas::all();
+        $kelas = Kelas::withCount('siswas')->get();
         $kelas_id = $request->kelas_id;
         $search = $request->search;
+        $selectedKelas = $kelas_id ? Kelas::find($kelas_id) : null;
 
         if (!$kelas_id && !$search) {
-            $siswas = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
-            return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search'));
+            $siswas = collect();
+            return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search', 'selectedKelas'));
         }
 
-        $query = Siswa::with('user', 'kelas');
+        $query = Siswa::with('user', 'kelas')
+            ->orderByRaw('CAST(nis AS UNSIGNED) ASC, nis ASC');
         
         if ($kelas_id) {
             $query->where('kelas_id', $kelas_id);
@@ -906,9 +908,10 @@ class GuruController extends Controller
             });
         }
         
-        $siswas = $query->paginate(25)->withQueryString();
+        // Tampilkan seluruh siswa satu kelas dalam satu halaman penuh (misal 32 siswa)
+        $siswas = $query->get();
         
-        return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search'));
+        return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search', 'selectedKelas'));
     }
 
     public function storeSiswa(Request $request)
