@@ -11,11 +11,9 @@ use App\Http\Controllers\ArtikelController;
 
 // Public Routes
 Route::get('/', [PublicController::class, 'index']);
-Route::get('/about', [PublicController::class, 'about']);
-Route::get('/portfolio', [PublicController::class, 'portfolio']);
-Route::get('/blog', [PublicController::class, 'blog']);
 Route::get('/artikel', [ArtikelController::class, 'index'])->name('artikel.index');
 Route::get('/artikel/{slug}', [ArtikelController::class, 'show'])->name('artikel.show');
+Route::redirect('/blog', '/artikel', 301);
 
 // Auth Routes
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');

@@ -30,19 +30,4 @@ class PublicController extends Controller
 
         return view('home', compact('komentars', 'stats', 'artikels'));
     }
-
-    public function about()
-    {
-        return view('about');
-    }
-
-    public function portfolio()
-    {
-        return view('portfolio');
-    }
-
-    public function blog()
-    {
-        return view('blog');
-    }
 }
