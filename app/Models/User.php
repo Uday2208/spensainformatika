@@ -65,4 +65,14 @@ class User extends Authenticatable
 
         return \App\Services\FileStorageService::url($this->avatar, 'avatars');
     }
+
+    public function isSiswa(): bool
+    {
+        return $this->role === 'siswa';
+    }
+
+    public function isGuru(): bool
+    {
+        return $this->role === 'guru';
+    }
 }
