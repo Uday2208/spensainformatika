@@ -141,9 +141,15 @@
                 </div>
             </div>
 
-            @if($siswas->isEmpty())
+            @if(!request('kelas_id') && !request('search'))
+            <div class="p-12 text-center text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+                <p class="font-bold text-slate-600 text-sm">Silakan Pilih Kelas atau Cari Siswa</p>
+                <p class="text-xs text-slate-400 mt-1">Pilih kelas pada menu di atas atau ketik nama/NIS siswa untuk menampilkan daftar data.</p>
+            </div>
+            @elseif($siswas->isEmpty())
             <div class="border border-dashed border-slate-300 p-8 rounded text-center text-slate-500 text-sm">
-                Belum ada siswa terdaftar.
+                Tidak ditemukan data siswa untuk filter tersebut.
             </div>
             @else
             <div class="overflow-x-auto">

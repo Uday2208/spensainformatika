@@ -376,44 +376,23 @@
      ============================================================ --}}
 @else
 <div class="space-y-4">
-    <div class="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h3 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
-            <span>🏫</span> Ringkasan Keaktifan Semua Kelas
+    <div class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center">
+        <div class="w-14 h-14 bg-blue-100 text-blue-700 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xs text-2xl font-bold">
+            📊
+        </div>
+        <h3 class="text-base font-bold text-slate-800 mb-1">
+            Silakan Pilih Kelas Terlebih Dahulu
         </h3>
-        <p class="text-xs text-slate-500 mb-6">Pilih salah satu kelas di bawah untuk melihat matriks lengkap dan mengedit nilai keaktifan per pertemuan.</p>
+        <p class="text-xs text-slate-500 mb-6 max-w-md mx-auto">Pilih salah satu kelas di bawah atau gunakan filter di atas untuk melihat matriks nilai keaktifan per pertemuan.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            @foreach($ringkasanKelas as $rk)
-            <div class="border border-slate-200 hover:border-blue-300 rounded-2xl p-5 hover:shadow-md transition-all bg-gradient-to-b from-white to-slate-50/50 flex flex-col justify-between">
-                <div>
-                    <div class="flex items-center justify-between mb-3">
-                        <span class="px-3 py-1 bg-blue-50 text-blue-700 font-extrabold text-sm rounded-xl border border-blue-200">
-                            {{ $rk->nama_kelas }}
-                        </span>
-                        <span class="text-xs text-slate-500 font-medium">
-                            {{ $rk->siswas_count }} Siswa
-                        </span>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-2 my-4">
-                        <div class="bg-white p-3 rounded-xl border border-slate-100">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Pertemuan</span>
-                            <span class="text-lg font-black text-indigo-600">{{ $rk->total_pertemuan }} Sesi</span>
-                        </div>
-                        <div class="bg-white p-3 rounded-xl border border-slate-100">
-                            <span class="text-[10px] uppercase font-bold text-slate-400 block">Rata-Rata</span>
-                            <span class="text-lg font-black {{ $rk->rata_keaktifan >= 80 ? 'text-emerald-600' : 'text-blue-600' }}">
-                                {{ $rk->rata_keaktifan > 0 ? number_format($rk->rata_keaktifan, 1) : '-' }}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-
-                <a href="{{ url('/app/rekap-keaktifan') }}?kelas_id={{ $rk->id }}" class="mt-2 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl text-center shadow-sm transition-colors flex items-center justify-center gap-2">
-                    <span>Buka Rekap Kelas {{ $rk->nama_kelas }}</span>
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                </a>
-            </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 max-w-3xl mx-auto">
+            @foreach($kelas as $k)
+            <a href="{{ url('/app/rekap-keaktifan') }}?kelas_id={{ $k->id }}" 
+               class="p-4 bg-slate-50 hover:bg-blue-600 hover:text-white rounded-2xl border border-slate-200 hover:border-blue-600 shadow-xs hover:shadow-md transition-all flex flex-col items-center justify-center gap-1 group active:scale-95">
+                <span class="text-xs font-bold text-slate-400 group-hover:text-blue-200 uppercase tracking-wider">Kelas</span>
+                <span class="text-base font-black text-slate-800 group-hover:text-white">{{ $k->nama_kelas }}</span>
+                <span class="text-[10px] text-blue-600 group-hover:text-white font-bold mt-1">Buka Rekap →</span>
+            </a>
             @endforeach
         </div>
     </div>

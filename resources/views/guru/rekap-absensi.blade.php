@@ -139,7 +139,15 @@
 
 <!-- Tabel Rekapitulasi Presensi -->
 <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-    @if($siswas->isEmpty())
+    @if(!$kelas_id && !$nama_siswa)
+        <div class="p-16 text-center text-slate-400 bg-slate-50/50">
+            <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 002-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>
+            </div>
+            <p class="font-bold text-slate-700 text-base">Silakan Pilih Kelas Terlebih Dahulu</p>
+            <p class="text-xs text-slate-400 mt-1 max-w-md mx-auto">Pilih kelas pada menu filter di atas (atau ketik nama siswa) untuk menampilkan Laporan Rekap Presensi.</p>
+        </div>
+    @elseif($siswas->isEmpty())
         <div class="p-12 text-center text-slate-400 italic">
             <svg class="w-12 h-12 mx-auto text-slate-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
             Tidak ada data presensi yang sesuai dengan filter.

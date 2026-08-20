@@ -326,15 +326,7 @@ class GuruController extends Controller
 
         $daftarPertemuan = collect();
         $siswas = collect();
-        $ringkasanKelas = collect();
-        $stats = [
-            'total_siswa' => 0,
-            'total_pertemuan' => 0,
-            'total_log' => 0,
-            'rata_kelas' => 0,
-            'sangat_aktif' => 0,
-            'perlu_bimbingan' => 0,
-        ];
+        $stats = null;
 
         if ($kelas_id) {
             // Ambil daftar pertemuan yang unik di kelas ini
@@ -384,19 +376,10 @@ class GuruController extends Controller
                 'sangat_aktif' => $sangatAktifCount,
                 'perlu_bimbingan' => $perluBimbinganCount,
             ];
-        } else {
-            // Ringkasan per kelas jika belum memilih kelas tertentu
-            $ringkasanKelas = Kelas::withCount('siswas')->get()->map(function($k) {
-                $logs = PenilaianHarian::where('kelas_id', $k->id)->get();
-                $k->total_pertemuan = $logs->pluck('pertemuan')->unique()->count();
-                $k->total_log = $logs->count();
-                $k->rata_keaktifan = $logs->count() > 0 ? round($logs->avg('nilai'), 1) : 0;
-                return $k;
-            });
         }
 
         return view('guru.rekap-keaktifan', compact(
-            'kelas', 'kelas_id', 'nama_siswa', 'daftarPertemuan', 'siswas', 'stats', 'ringkasanKelas'
+            'kelas', 'kelas_id', 'nama_siswa', 'daftarPertemuan', 'siswas', 'stats'
         ));
     }
 
@@ -899,10 +882,16 @@ class GuruController extends Controller
 
     public function dataSiswa(\Illuminate\Http\Request $request)
     {
-        $query = Siswa::with('user', 'kelas');
-        
+        $kelas = Kelas::all();
         $kelas_id = $request->kelas_id;
         $search = $request->search;
+
+        if (!$kelas_id && !$search) {
+            $siswas = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+            return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search'));
+        }
+
+        $query = Siswa::with('user', 'kelas');
         
         if ($kelas_id) {
             $query->where('kelas_id', $kelas_id);
@@ -918,9 +907,8 @@ class GuruController extends Controller
         }
         
         $siswas = $query->paginate(25)->withQueryString();
-        $kelas = Kelas::all();
         
-        return view('guru.data-siswa', compact('siswas', 'kelas'));
+        return view('guru.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search'));
     }
 
     public function storeSiswa(Request $request)
@@ -1217,15 +1205,18 @@ class GuruController extends Controller
         $kelas = Kelas::all();
         $kelas_id = $request->kelas_id;
         
-        try {
-            $query = JurnalMengajar::with('kelas')->orderBy('tanggal', 'desc')->orderBy('pertemuan', 'desc');
-            
-            if ($kelas_id) {
-                $query->where('kelas_id', $kelas_id);
+        if ($kelas_id) {
+            try {
+                $query = JurnalMengajar::with('kelas')
+                    ->where('kelas_id', $kelas_id)
+                    ->orderBy('tanggal', 'desc')
+                    ->orderBy('pertemuan', 'desc');
+                
+                $jurnals = $query->paginate(20)->withQueryString();
+            } catch (\Exception $e) {
+                $jurnals = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
             }
-            
-            $jurnals = $query->paginate(20)->withQueryString();
-        } catch (\Exception $e) {
+        } else {
             $jurnals = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
         }
 
@@ -1382,6 +1373,12 @@ class GuruController extends Controller
         $kelas = Kelas::all();
         $kelas_id = $request->kelas_id;
         $nama_siswa = $request->nama_siswa;
+
+        if (!$kelas_id && !$nama_siswa) {
+            $siswas = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 35);
+            $stats = null;
+            return view('guru.rekap-absensi', compact('kelas', 'kelas_id', 'nama_siswa', 'siswas', 'stats'));
+        }
         
         $query = Siswa::with('user', 'kelas')
             ->withCount([
