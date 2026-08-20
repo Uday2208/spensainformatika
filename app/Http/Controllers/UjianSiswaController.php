@@ -161,9 +161,11 @@ class UjianSiswaController extends Controller
         $startedAt = $hasil->started_at;
         $durasiDetik = $ujian->durasi * 60;
         $terpakai = now()->diffInSeconds($startedAt);
-        $sisaDetik = max(0, $durasiDetik - $terpakai);
-
-        return view('siswa.ujian.kerjakan', compact('ujian', 'hasil', 'jawabanTersimpan', 'sisaDetik'));
+        return response()
+            ->view('siswa.ujian.kerjakan', compact('ujian', 'hasil', 'jawabanTersimpan', 'sisaDetik'))
+            ->header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0, post-check=0, pre-check=0')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', 'Sun, 02 Jan 1990 00:00:00 GMT');
     }
 
     /**

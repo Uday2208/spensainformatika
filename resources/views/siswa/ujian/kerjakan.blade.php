@@ -402,6 +402,7 @@
             },
 
             confirmSubmit() {
+                this.isSubmitting = false;
                 this.showConfirmModal = true;
             },
 
@@ -433,14 +434,25 @@
                         jawaban: this.jawabanState
                     })
                 })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 419) {
+                        alert('Sesi keamanan Anda telah disegarkan oleh server. Halaman akan dimuat ulang secara aman (jawaban tidak hilang).');
+                        window.location.reload();
+                        return;
+                    }
+                    if (!res.ok) {
+                        throw new Error('HTTP ' + res.status);
+                    }
+                    return res.json();
+                })
                 .then(data => {
+                    if (!data) return;
                     if (data.success) {
                         // Clean up localStorage because submit is successful
                         localStorage.removeItem(this.localStorageKey());
                         window.location.href = data.redirect;
                     } else {
-                        alert('Gagal mengumpulkan ujian: ' + data.message);
+                        alert('Gagal mengumpulkan ujian: ' + (data.message || 'Terjadi kendala'));
                         this.saveStatus = 'error';
                         this.saveStatusText = 'Gagal mengirim. Jawaban aman di perangkat.';
                         this.isSubmitting = false;
@@ -448,7 +460,7 @@
                 })
                 .catch(err => {
                     console.error(err);
-                    alert('Terjadi kesalahan jaringan saat mengumpulkan ujian. Silakan periksa koneksi Anda dan coba klik Kumpulkan lagi.');
+                    alert('Terjadi kendala koneksi saat mengumpulkan ujian. Jawaban Anda tersimpan aman di perangkat. Silakan klik Kumpulkan kembali.');
                     this.saveStatus = 'error';
                     this.saveStatusText = 'Menunggu koneksi... aman di perangkat.';
                     this.isSubmitting = false;
@@ -456,6 +468,13 @@
             }
         };
     }
+
+    // Anti-bfcache listener: Jika siswa menekan tombol Back lalu kembali lagi, reload instan agar tombol & CSRF segar
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted || (window.performance && window.performance.navigation && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
 
 </script>
 
