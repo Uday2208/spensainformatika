@@ -58,6 +58,19 @@ class SiswaController extends Controller
         $kkmSetting = \App\Models\Setting::where('key', 'kkm_nilai')->first();
         $kkm = $kkmSetting ? $kkmSetting->value : 75;
 
+        // Cek apakah ada jadwal ujian harian yang sedang aktif untuk kelas siswa
+        $ujianAktifCount = 0;
+        if ($siswa && $siswa->kelas_id) {
+            $ujianAktifCount = \App\Models\Ujian::where('status', 'aktif')
+                ->whereHas('kelasList', function($q) use ($siswa) {
+                    $q->where('kelas_id', $siswa->kelas_id);
+                })
+                ->whereDoesntHave('hasilUjians', function($q) use ($siswa) {
+                    $q->where('siswa_id', $siswa->id)->whereIn('status', ['selesai', 'dinilai']);
+                })
+                ->count();
+        }
+
         // Menggunakan select() spesifik kolom yang dibutuhkan Blade dan get() biasa untuk menghindari bug cursor()
         $materis = Materi::select('id', 'judul', 'deskripsi', 'foto', 'file_materi', 'link', 'created_at')
             ->orderBy('created_at', 'desc')
@@ -66,7 +79,7 @@ class SiswaController extends Controller
         return view('siswa.dashboard', compact(
             'siswa', 'nilais', 'kkm', 'materis',
             'totalAbsen', 'hadir', 'sakit', 'izin', 'dispen', 'alpha',
-            'persentaseHadir', 'rataKeaktifan'
+            'persentaseHadir', 'rataKeaktifan', 'ujianAktifCount'
         ));
     }
 
