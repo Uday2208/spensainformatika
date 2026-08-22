@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'ai' => [
+        'provider' => env('AI_PROVIDER', 'openai'),
+        'enabled' => filter_var(env('AI_GRADING_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+        'timeout' => (int) env('AI_GRADING_TIMEOUT', 60),
+        'max_retries' => (int) env('AI_GRADING_MAX_RETRIES', 2),
+        'openai' => [
+            'api_key' => env('OPENAI_API_KEY'),
+            'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+        ],
+    ],
+
 ];

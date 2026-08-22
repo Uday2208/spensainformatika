@@ -8,6 +8,7 @@ use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\UjianController;
 use App\Http\Controllers\UjianSiswaController;
 use App\Http\Controllers\ArtikelController;
+use App\Http\Controllers\AiKoreksiController;
 
 // Public Routes
 Route::get('/', [PublicController::class, 'index']);
@@ -100,6 +101,10 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/hasil-ujian/{id}', [UjianController::class, 'showHasil'])->name('guru.hasil.show');
         Route::get('/hasil-ujian/{id}/siswa/{siswaId}', [UjianController::class, 'detailJawabanSiswa'])->name('guru.hasil.detail-siswa');
         Route::post('/hasil-ujian/{id}/siswa/{siswaId}/nilai', [UjianController::class, 'updateNilaiSiswaIndividu'])->name('guru.hasil.update-siswa');
+
+        // ============ AI KOREKSI ESSAY (GURU) ============
+        Route::post('/ujian/jawaban/{jawabanId}/koreksi-ai', [AiKoreksiController::class, 'gradeSingle'])->middleware('throttle:30,1')->name('guru.ujian.koreksi-ai');
+        Route::post('/ujian/koreksi-ai/{id}/accept', [AiKoreksiController::class, 'acceptScore'])->name('guru.ujian.koreksi-ai.accept');
     });
 
     // Siswa Routes

@@ -27,4 +27,14 @@ class JawabanSiswa extends Model
     {
         return $this->belongsTo(Soal::class);
     }
+
+    public function aiKoreksi()
+    {
+        return $this->hasOne(AiKoreksiEssay::class, 'jawaban_siswa_id')->latestOfMany();
+    }
+
+    public function aiKoreksis()
+    {
+        return $this->hasMany(AiKoreksiEssay::class, 'jawaban_siswa_id');
+    }
 }

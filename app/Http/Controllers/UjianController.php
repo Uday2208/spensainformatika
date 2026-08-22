@@ -415,8 +415,9 @@ class UjianController extends Controller
 
         $siswaIds = $hasilUjians->pluck('siswa_id')->toArray();
 
-        // Get essay answers for displayed students only (lightweight query)
-        $jawabanEssay = JawabanSiswa::where('ujian_id', $id)
+        // Get essay answers for displayed students only with aiKoreksi eager loaded to prevent N+1 query
+        $jawabanEssay = JawabanSiswa::with('aiKoreksi')
+            ->where('ujian_id', $id)
             ->whereIn('siswa_id', $siswaIds)
             ->whereHas('soal', fn($q) => $q->where('tipe', 'essay'))
             ->get()
@@ -691,7 +692,8 @@ class UjianController extends Controller
             return back()->withErrors(['Siswa belum mengerjakan ujian ini.']);
         }
 
-        $jawaban = JawabanSiswa::where('ujian_id', $id)
+        $jawaban = JawabanSiswa::with('aiKoreksi')
+            ->where('ujian_id', $id)
             ->where('siswa_id', $siswaId)
             ->get()
             ->keyBy('soal_id');
