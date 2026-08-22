@@ -6,6 +6,7 @@ use App\Models\JawabanSiswa;
 use App\Models\AiKoreksiEssay;
 use App\Services\Ai\Contracts\AiProviderInterface;
 use App\Services\Ai\Providers\OpenAiProvider;
+use App\Services\Ai\Providers\GeminiProvider;
 use Illuminate\Support\Facades\Log;
 use Exception;
 
@@ -37,6 +38,7 @@ RUBRIC;
         $providerName = config('services.ai.provider', 'openai');
 
         return match ($providerName) {
+            'gemini' => new GeminiProvider(),
             'openai' => new OpenAiProvider(),
             default => new OpenAiProvider(),
         };
@@ -92,7 +94,9 @@ RUBRIC;
         }
 
         $providerName = config('services.ai.provider', 'openai');
-        $modelName = (string) config('services.ai.openai.model', 'gpt-4o-mini');
+        $modelName = $providerName === 'gemini'
+            ? (string) config('services.ai.gemini.model', 'gemini-1.5-flash')
+            : (string) config('services.ai.openai.model', 'gpt-4o-mini');
 
         $rubrik = self::DEFAULT_RUBRIC;
         $pertanyaan = $soal->pertanyaan;
