@@ -400,34 +400,48 @@ class UjianController extends Controller
 
         $soalEssay = $ujian->soals()->where('tipe', 'essay')->get();
 
-        $query = HasilUjian::where('ujian_id', $id)
-            ->with(['siswa.user', 'siswa.kelas']);
+        $kelasList = $ujian->kelasList->count() > 0 ? $ujian->kelasList : Kelas::orderBy('nama_kelas', 'asc')->get();
 
+        // Hitung statistik ringkas per kelas (total peserta & yang belum dinilai) untuk badge navigasi tab
+        $statsPerKelas = HasilUjian::where('ujian_id', $id)
+            ->join('siswas', 'hasil_ujians.siswa_id', '=', 'siswas.id')
+            ->selectRaw('siswas.kelas_id, count(*) as total, sum(case when hasil_ujians.status != "dinilai" then 1 else 0 end) as belum_dinilai')
+            ->groupBy('siswas.kelas_id')
+            ->get()
+            ->keyBy('kelas_id');
+
+        $hasilUjians = collect();
+        $jawabanEssay = collect();
+        $selectedKelas = null;
+
+        // Hanya load data siswa jika filter kelas dipilih untuk mencegah memory bloat & browser freezing
         if ($kelas_id) {
-            $query->whereHas('siswa', function($q) use ($kelas_id) {
-                $q->where('kelas_id', $kelas_id);
-            });
+            $selectedKelas = Kelas::find($kelas_id);
+
+            $hasilUjians = HasilUjian::where('ujian_id', $id)
+                ->whereHas('siswa', function($q) use ($kelas_id) {
+                    $q->where('kelas_id', $kelas_id);
+                })
+                ->with(['siswa.user', 'siswa.kelas'])
+                ->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            $siswaIds = $hasilUjians->pluck('siswa_id')->toArray();
+
+            // Get essay answers for displayed students only with aiKoreksi eager loaded to prevent N+1 query
+            $jawabanEssay = JawabanSiswa::with('aiKoreksi')
+                ->where('ujian_id', $id)
+                ->whereIn('siswa_id', $siswaIds)
+                ->whereHas('soal', fn($q) => $q->where('tipe', 'essay'))
+                ->get()
+                ->groupBy('siswa_id');
         }
 
-        $hasilUjians = $query->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $siswaIds = $hasilUjians->pluck('siswa_id')->toArray();
-
-        // Get essay answers for displayed students only with aiKoreksi eager loaded to prevent N+1 query
-        $jawabanEssay = JawabanSiswa::with('aiKoreksi')
-            ->where('ujian_id', $id)
-            ->whereIn('siswa_id', $siswaIds)
-            ->whereHas('soal', fn($q) => $q->where('tipe', 'essay'))
-            ->get()
-            ->groupBy('siswa_id');
-
-        $kelasList = $ujian->kelasList->count() > 0 ? $ujian->kelasList : Kelas::orderBy('nama_kelas', 'asc')->get();
         $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
         $kkm = $kkmSetting ? $kkmSetting->value : 75;
 
-        return view('guru.ujian.koreksi', compact('ujian', 'soalEssay', 'hasilUjians', 'jawabanEssay', 'kkm', 'kelasList', 'kelas_id'));
+        return view('guru.ujian.koreksi', compact('ujian', 'soalEssay', 'hasilUjians', 'jawabanEssay', 'kkm', 'kelasList', 'kelas_id', 'statsPerKelas', 'selectedKelas'));
     }
 
     public function storeKoreksi(Request $request, $id)
@@ -441,6 +455,7 @@ class UjianController extends Controller
         $request->validate([
             'nilai_essay' => 'required|array',
             'nilai_essay.*' => 'required|numeric|min:0|max:100',
+            'kelas_id' => 'nullable|integer',
         ]);
 
         $totalBobot = $ujian->totalBobot();
@@ -474,7 +489,11 @@ class UjianController extends Controller
             }
 
             DB::commit();
-            return back()->with('success', 'Nilai essay berhasil disimpan!');
+            $redirectUrl = route('guru.ujian.koreksi', $ujian->id);
+            if ($request->filled('kelas_id')) {
+                $redirectUrl .= '?kelas_id=' . $request->kelas_id;
+            }
+            return redirect($redirectUrl)->with('success', 'Nilai essay untuk kelas ini berhasil disimpan!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['Terjadi kesalahan: ' . $e->getMessage()]);

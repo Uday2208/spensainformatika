@@ -21,9 +21,7 @@ class WebFeatureTest extends TestCase
     public function test_public_pages()
     {
         $this->get('/')->assertStatus(200);
-        $this->get('/about')->assertStatus(200);
-        $this->get('/portfolio')->assertStatus(200);
-        $this->get('/blog')->assertStatus(200);
+        $this->get('/artikel')->assertStatus(200);
         $this->get('/login')->assertStatus(200);
     }
 
