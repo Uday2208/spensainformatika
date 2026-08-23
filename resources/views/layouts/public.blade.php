@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', ($app_settings['app_name'] ?? 'SPENSA') . ' | Portal Edukasi & Akademik')</title>
+    <!-- Favicon -->
+    @if(!empty($app_settings['app_logo']))
+        @if(str_starts_with($app_settings['app_logo'], 'data:image'))
+            <link rel="icon" type="image/png" href="{{ $app_settings['app_logo'] }}">
+        @else
+            <link rel="icon" type="image/png" href="{{ asset('uploads/logo/' . $app_settings['app_logo']) }}">
+        @endif
+    @else
+        <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
+    @endif
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
