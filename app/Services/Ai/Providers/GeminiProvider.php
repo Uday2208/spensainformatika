@@ -17,7 +17,7 @@ class GeminiProvider implements AiProviderInterface
     public function __construct(?string $apiKey = null, ?string $model = null, ?int $timeout = null, ?int $maxRetries = null)
     {
         $this->apiKey = $apiKey ?? (string) config('services.ai.gemini.api_key', '');
-        $this->model = $model ?? (string) config('services.ai.gemini.model', 'gemini-1.5-flash');
+        $this->model = $model ?? (string) config('services.ai.gemini.model', 'gemini-2.0-flash');
         $this->timeout = $timeout ?? (int) config('services.ai.timeout', 60);
         $this->maxRetries = $maxRetries ?? (int) config('services.ai.max_retries', 2);
     }
@@ -78,7 +78,11 @@ PROMPT;
         $startTime = microtime(true);
 
         try {
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+            $modelName = ltrim($this->model, '/');
+            if (str_starts_with($modelName, 'models/')) {
+                $modelName = substr($modelName, 7);
+            }
+            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$modelName}:generateContent?key={$this->apiKey}";
 
             $response = Http::withHeaders([
                 'Content-Type' => 'application/json',
