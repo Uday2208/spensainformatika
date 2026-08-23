@@ -652,50 +652,63 @@ class UjianController extends Controller
     public function showHasil(Request $request, $id)
     {
         $ujian = Ujian::with(['kelasList', 'soals'])->findOrFail($id);
-        
-        $query = HasilUjian::where('ujian_id', $id)
-            ->with(['siswa.user', 'siswa.kelas']);
-
-        if ($request->filled('kelas_id')) {
-            $query->whereHas('siswa', function ($q) use ($request) {
-                $q->where('kelas_id', $request->kelas_id);
-            });
-        }
-
-        $hasilUjians = $query->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $selectedKelas = $request->input('kelas_id', '');
 
         // Ambil daftar kelas yang ditargetkan oleh ujian ini (jika ada target khusus), atau semua kelas
         $kelasList = $ujian->kelasList->count() > 0 
             ? $ujian->kelasList 
             : Kelas::orderBy('nama_kelas', 'asc')->get();
 
-        $selectedKelas = $request->input('kelas_id', '');
+        // Hitung statistik ringkas per kelas (total peserta & yang belum dinilai) untuk badge navigasi tab
+        $statsPerKelas = HasilUjian::where('ujian_id', $id)
+            ->join('siswas', 'hasil_ujians.siswa_id', '=', 'siswas.id')
+            ->selectRaw('siswas.kelas_id, count(*) as total, sum(case when hasil_ujians.status != "dinilai" then 1 else 0 end) as belum_dinilai, avg(hasil_ujians.nilai_akhir) as rata_rata')
+            ->groupBy('siswas.kelas_id')
+            ->get()
+            ->keyBy('kelas_id');
+
+        $hasilUjians = collect();
+        $selectedKelasObj = null;
+        $stats = null;
+
         $kkmSetting = Setting::where('key', 'kkm_nilai')->first();
         $kkm = $kkmSetting ? (float)$kkmSetting->value : 75;
         $hasEssay = $ujian->soalEssay()->count() > 0;
 
-        // Hitung statistik analisis hasil ujian
-        $totalPeserta = $hasilUjians->count();
-        $rataKelas = $totalPeserta > 0 ? round($hasilUjians->avg('nilai_akhir'), 1) : 0;
-        $nilaiTertinggi = $totalPeserta > 0 ? round($hasilUjians->max('nilai_akhir'), 1) : 0;
-        $nilaiTerendah = $totalPeserta > 0 ? round($hasilUjians->min('nilai_akhir'), 1) : 0;
-        $tuntasCount = $hasilUjians->where('nilai_akhir', '>=', $kkm)->count();
-        $belumTuntasCount = $hasilUjians->where('nilai_akhir', '<', $kkm)->count();
-        $persenTuntas = $totalPeserta > 0 ? round(($tuntasCount / $totalPeserta) * 100, 1) : 0;
+        // Hanya load data detail siswa dan KPI jika kelas_id dipilih
+        if ($selectedKelas) {
+            $selectedKelasObj = Kelas::find($selectedKelas);
 
-        $stats = [
-            'total_peserta' => $totalPeserta,
-            'rata_kelas' => $rataKelas,
-            'nilai_tertinggi' => $nilaiTertinggi,
-            'nilai_terendah' => $nilaiTerendah,
-            'tuntas_count' => $tuntasCount,
-            'belum_tuntas_count' => $belumTuntasCount,
-            'persen_tuntas' => $persenTuntas,
-        ];
+            $hasilUjians = HasilUjian::where('ujian_id', $id)
+                ->whereHas('siswa', function ($q) use ($selectedKelas) {
+                    $q->where('kelas_id', $selectedKelas);
+                })
+                ->with(['siswa.user', 'siswa.kelas'])
+                ->orderByRaw("CASE WHEN status = 'dinilai' THEN 1 ELSE 0 END ASC")
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-        return view('guru.ujian.hasil-show', compact('ujian', 'hasilUjians', 'kelasList', 'selectedKelas', 'kkm', 'hasEssay', 'stats'));
+            // Hitung statistik analisis hasil ujian khusus untuk kelas yang dipilih
+            $totalPeserta = $hasilUjians->count();
+            $rataKelas = $totalPeserta > 0 ? round($hasilUjians->avg('nilai_akhir'), 1) : 0;
+            $nilaiTertinggi = $totalPeserta > 0 ? round($hasilUjians->max('nilai_akhir'), 1) : 0;
+            $nilaiTerendah = $totalPeserta > 0 ? round($hasilUjians->min('nilai_akhir'), 1) : 0;
+            $tuntasCount = $hasilUjians->where('nilai_akhir', '>=', $kkm)->count();
+            $belumTuntasCount = $hasilUjians->where('nilai_akhir', '<', $kkm)->count();
+            $persenTuntas = $totalPeserta > 0 ? round(($tuntasCount / $totalPeserta) * 100, 1) : 0;
+
+            $stats = [
+                'total_peserta' => $totalPeserta,
+                'rata_kelas' => $rataKelas,
+                'nilai_tertinggi' => $nilaiTertinggi,
+                'nilai_terendah' => $nilaiTerendah,
+                'tuntas_count' => $tuntasCount,
+                'belum_tuntas_count' => $belumTuntasCount,
+                'persen_tuntas' => $persenTuntas,
+            ];
+        }
+
+        return view('guru.ujian.hasil-show', compact('ujian', 'hasilUjians', 'kelasList', 'selectedKelas', 'selectedKelasObj', 'kkm', 'hasEssay', 'stats', 'statsPerKelas'));
     }
 
     public function detailJawabanSiswa($id, $siswaId)
