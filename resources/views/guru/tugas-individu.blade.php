@@ -46,12 +46,12 @@
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6"
      x-data="{ 
-         allSiswas: {{ json_encode($siswas->map(fn($s) => ['id' => $s->id, 'name' => $s->user->name ?? 'Tanpa Nama', 'kelas_id' => $s->kelas_id, 'nama_kelas' => $s->kelas->nama_kelas ?? '-', 'nis' => $s->nomor_induk])) }},
-         activeFilterKelasId: '{{ $kelas->first()->id ?? '' }}',
+         allSiswas: {{ json_encode($siswas->map(fn($s) => ['id' => $s->id, 'name' => $s->user->name ?? 'Tanpa Nama', 'kelas_id' => $s->kelas_id, 'nama_kelas' => $s->kelas->nama_kelas ?? '-', 'nis' => $s->nis])->values()) }},
+         activeFilterKelasId: '',
          selectedSiswas: [],
          
          get currentFilteredSiswas() {
-             if (!this.activeFilterKelasId) return this.allSiswas;
+             if (!this.activeFilterKelasId) return [];
              return this.allSiswas.filter(s => s.kelas_id == this.activeFilterKelasId);
          },
          
@@ -78,6 +78,7 @@
          },
          
          selectAllInCurrentFilter() {
+             if (!this.activeFilterKelasId) return;
              this.currentFilteredSiswas.forEach(siswa => {
                  if (!this.isSiswaSelected(siswa.id)) {
                      this.selectedSiswas.push({
@@ -91,6 +92,7 @@
          },
 
          deselectAllInCurrentFilter() {
+             if (!this.activeFilterKelasId) return;
              const currentIds = this.currentFilteredSiswas.map(s => s.id);
              this.selectedSiswas = this.selectedSiswas.filter(s => !currentIds.includes(s.id));
          }
@@ -122,6 +124,7 @@
                     <div>
                         <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1">1. Filter Kelas Siswa</label>
                         <select x-model="activeFilterKelasId" class="input-compact w-full bg-white min-h-[38px] rounded-xl text-xs font-semibold">
+                            <option value="">-- Pilih Rombel Kelas Terlebih Dahulu --</option>
                             @foreach($kelas as $k)
                                 <option value="{{ $k->id }}">Kelas {{ $k->nama_kelas }}</option>
                             @endforeach
@@ -131,15 +134,20 @@
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
                             <label class="block text-[11px] font-bold text-slate-700 uppercase tracking-wider">2. Centang Siswa</label>
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center gap-2" x-show="activeFilterKelasId">
                                 <button type="button" @click="selectAllInCurrentFilter()" class="text-[10px] font-bold text-blue-600 hover:underline">Semua Rombel Ini</button>
                                 <span class="text-slate-300">|</span>
                                 <button type="button" @click="deselectAllInCurrentFilter()" class="text-[10px] font-bold text-slate-400 hover:underline">Batal</button>
                             </div>
                         </div>
 
+                        <!-- Belum memilih kelas -->
+                        <div x-show="!activeFilterKelasId" class="p-4 text-center text-slate-400 text-xs italic bg-white border border-dashed border-slate-200 rounded-xl">
+                            Silakan pilih kelas pada langkah 1 di atas untuk memuat daftar siswa.
+                        </div>
+
                         <!-- Daftar Siswa Sesuai Filter -->
-                        <div class="space-y-1 max-h-48 overflow-y-auto p-2 bg-white border border-slate-200 rounded-xl">
+                        <div x-show="activeFilterKelasId" class="space-y-1 max-h-48 overflow-y-auto p-2 bg-white border border-slate-200 rounded-xl">
                             <template x-for="siswa in currentFilteredSiswas" :key="siswa.id">
                                 <label class="flex items-center gap-2 p-1.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer text-xs">
                                     <input type="checkbox" 

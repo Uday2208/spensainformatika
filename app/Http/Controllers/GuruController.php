@@ -1333,7 +1333,8 @@ class GuruController extends Controller
         $siswas = Siswa::whereIn('kelas_id', $kelasIds)
             ->with(['user', 'kelas'])
             ->get()
-            ->sortBy(['kelas.nama_kelas', 'user.name']);
+            ->sortBy(['kelas.nama_kelas', 'user.name'])
+            ->values();
 
         $query = Tugas::where('guru_id', auth()->id())
             ->where('tipe_target', 'individu')
