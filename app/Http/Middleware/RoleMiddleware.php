@@ -11,14 +11,16 @@ class RoleMiddleware
 {
     /**
      * Handle an incoming request.
+     * Mendukung multi-role: middleware('role:admin,guru')
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        if (!Auth::check() || Auth::user()->role !== $role) {
+        if (!Auth::check() || !in_array(Auth::user()->role, $roles)) {
             return redirect('/');
         }
         return $next($request);
     }
 }
+

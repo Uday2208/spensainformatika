@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\AdminController;
 use App\Http\Controllers\GuruController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\UjianController;
@@ -26,6 +27,37 @@ Route::prefix('app')->middleware('auth')->group(function () {
     
     // Universal App Routes
     Route::post('/avatar', [AuthController::class, 'updateAvatar']);
+
+    // ============ ADMIN ROUTES ============
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/dashboard-admin', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+        // Manajemen Guru
+        Route::get('/admin/data-guru', [AdminController::class, 'dataGuru'])->name('admin.guru.index');
+        Route::post('/admin/data-guru', [AdminController::class, 'storeGuru'])->name('admin.guru.store');
+        Route::put('/admin/data-guru/{id}', [AdminController::class, 'updateGuru'])->name('admin.guru.update');
+        Route::delete('/admin/data-guru/{id}', [AdminController::class, 'destroyGuru'])->name('admin.guru.destroy');
+        Route::post('/admin/data-guru/{id}/reset-password', [AdminController::class, 'resetPasswordGuru'])->name('admin.guru.reset-password');
+
+        // Manajemen Kelas
+        Route::get('/admin/data-kelas', [AdminController::class, 'dataKelas'])->name('admin.kelas.index');
+        Route::post('/admin/data-kelas', [AdminController::class, 'storeKelas'])->name('admin.kelas.store');
+        Route::delete('/admin/data-kelas/{id}', [AdminController::class, 'destroyKelas'])->name('admin.kelas.destroy');
+
+        // Manajemen Siswa
+        Route::get('/admin/data-siswa', [AdminController::class, 'dataSiswa'])->name('admin.siswa.index');
+        Route::post('/admin/data-siswa', [AdminController::class, 'storeSiswa'])->name('admin.siswa.store');
+        Route::put('/admin/data-siswa/{id}', [AdminController::class, 'updateSiswa'])->name('admin.siswa.update');
+        Route::delete('/admin/data-siswa/{id}', [AdminController::class, 'destroySiswa'])->name('admin.siswa.destroy');
+        Route::post('/admin/data-siswa/{id}/reset-password', [AdminController::class, 'resetPasswordSiswa'])->name('admin.siswa.reset-password');
+        Route::post('/admin/import-siswa', [AdminController::class, 'importSiswa'])->name('admin.siswa.import');
+
+        // Pengaturan
+        Route::get('/admin/pengaturan', [AdminController::class, 'pengaturan'])->name('admin.pengaturan');
+        Route::post('/admin/pengaturan', [AdminController::class, 'storePengaturan'])->name('admin.pengaturan.store');
+        Route::post('/admin/setting-kkm', [AdminController::class, 'updateSettingKkm'])->name('admin.setting-kkm');
+        Route::post('/admin/setting-komentar', [AdminController::class, 'updateSettingKomentar'])->name('admin.setting-komentar');
+    });
 
     // Guru Routes
     Route::middleware('role:guru')->group(function () {

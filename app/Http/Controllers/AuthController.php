@@ -56,7 +56,9 @@ class AuthController extends Controller
 
     private function redirectBasedOnRole($user)
     {
-        if ($user->role === 'guru') {
+        if ($user->role === 'admin') {
+            return redirect('/app/dashboard-admin');
+        } elseif ($user->role === 'guru') {
             return redirect('/app/dashboard-guru');
         } elseif ($user->role === 'siswa') {
             return redirect('/app/dashboard-siswa');
