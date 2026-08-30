@@ -943,38 +943,6 @@ class GuruController extends Controller
         return back()->with('success', 'Komentar berhasil dihapus!');
     }
 
-    public function updateSettingKomentar(Request $request)
-    {
-        $request->validate([
-            'limit' => 'required|integer|min:1|max:500'
-        ]);
-
-        Setting::updateOrCreate(
-            ['key' => 'komentar_homepage_limit'],
-            ['value' => $request->limit]
-        );
-
-        \Illuminate\Support\Facades\Cache::forget('app_settings');
-
-        return back()->with('success', 'Pengaturan limit komentar berhasil disimpan!');
-    }
-
-    public function updateSettingKkm(Request $request)
-    {
-        $request->validate([
-            'kkm' => 'required|numeric|min:0|max:100'
-        ]);
-
-        Setting::updateOrCreate(
-            ['key' => 'kkm_nilai'],
-            ['value' => $request->kkm]
-        );
-
-        \Illuminate\Support\Facades\Cache::forget('app_settings');
-
-        return back()->with('success', 'Nilai KKM berhasil diperbarui!');
-    }
-
     public function rekapJurnal(Request $request)
     {
         $kelas = $this->getKelasGuru();
@@ -1459,56 +1427,4 @@ class GuruController extends Controller
 
         return back()->with('success', 'Artikel berhasil dihapus!');
     }
-
-    public function pengaturan()
-    {
-        $settings = \App\Models\Setting::pluck('value', 'key')->toArray();
-        return view('guru.pengaturan', compact('settings'));
-    }
-
-    public function storePengaturan(Request $request)
-    {
-        $request->validate([
-            'app_name' => 'nullable|string|max:255',
-            'app_subname' => 'nullable|string|max:255',
-            'app_logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048'
-        ]);
-
-        if ($request->hasFile('app_logo')) {
-            $oldLogo = \App\Models\Setting::where('key', 'app_logo')->first();
-            if ($oldLogo && $oldLogo->value && !str_starts_with($oldLogo->value, 'data:image')) {
-                \App\Services\FileStorageService::delete($oldLogo->value, 'logo');
-            }
-
-            $logoFileName = \App\Services\FileStorageService::upload($request->file('app_logo'), 'logo');
-
-            \App\Models\Setting::updateOrCreate(
-                ['key' => 'app_logo'],
-                ['value' => $logoFileName]
-            );
-            \Illuminate\Support\Facades\Cache::forget('app_settings');
-        }
-
-        if ($request->filled('app_name')) {
-            \App\Models\Setting::updateOrCreate(
-                ['key' => 'app_name'],
-                ['value' => $request->app_name]
-            );
-        }
-
-        if ($request->filled('app_subname')) {
-            \App\Models\Setting::updateOrCreate(
-                ['key' => 'app_subname'],
-                ['value' => $request->app_subname]
-            );
-        }
-
-        // Clear cached settings so changes take effect immediately
-        \Illuminate\Support\Facades\Cache::forget('app_settings');
-
-        return back()->with('success', 'Pengaturan aplikasi berhasil diperbarui!');
-    }
-
-    // =========================================================
-    // (Rollback: Removed jurnalMengajar methods to restore original state)
 }

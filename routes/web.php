@@ -89,8 +89,6 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::delete('/nilai-by-bab', [GuruController::class, 'destroyNilaiByBab'])->name('guru.nilai.destroy-by-bab');
         Route::get('/kelola-komentar', [GuruController::class, 'kelolaKomentar']);
         Route::delete('/komentar/{id}', [GuruController::class, 'destroyKomentar']);
-        Route::post('/setting-komentar', [GuruController::class, 'updateSettingKomentar']);
-        Route::post('/setting-kkm', [GuruController::class, 'updateSettingKkm']);
         Route::get('/rekap-absensi', [GuruController::class, 'rekapAbsensi']);
         Route::get('/rekap-absensi/export', [GuruController::class, 'exportRekapAbsensi']);
         Route::get('/rekap-absensi/siswa/{id}', [GuruController::class, 'rekapAbsensiSiswa']);
@@ -99,8 +97,6 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::post('/jurnal', [GuruController::class, 'storeJurnal'])->name('guru.jurnal.store');
         Route::delete('/jurnal/{id}', [GuruController::class, 'destroyJurnal'])->name('guru.jurnal.destroy');
         Route::get('/rekap-jurnal/export', [GuruController::class, 'exportRekapJurnal'])->name('guru.rekap-jurnal.export');
-        Route::get('/pengaturan', [GuruController::class, 'pengaturan']);
-        Route::post('/pengaturan', [GuruController::class, 'storePengaturan']);
 
         // ============ UJIAN HARIAN (GURU) ============
         Route::get('/ujian', [UjianController::class, 'index'])->name('guru.ujian.index');
