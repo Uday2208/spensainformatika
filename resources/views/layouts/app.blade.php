@@ -133,20 +133,6 @@
                 </div>
             </div>
 
-            <!-- Master Data -->
-            <div>
-                <p class="px-3 text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">Master Data</p>
-                <div class="space-y-1">
-                    <a href="{{ url('/app/data-kelas') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/data-kelas') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
-                        Data Kelas
-                    </a>
-                    <a href="{{ url('/app/data-siswa') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/data-siswa') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-                        Data Siswa
-                    </a>
-                </div>
-            </div>
 
             <!-- Presensi & Akademik -->
             <div>

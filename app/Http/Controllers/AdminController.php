@@ -76,12 +76,12 @@ class AdminController extends Controller
     }
 
     // ==========================================
-    // MANAJEMEN GURU (CRUD)
+    // MANAJEMEN GURU & PLOTTING KELAS
     // ==========================================
     public function dataGuru(Request $request)
     {
         $search = $request->search;
-        $query  = User::where('role', 'guru');
+        $query  = User::where('role', 'guru')->with('kelasMengajar');
 
         if ($search) {
             $query->where(function ($q) use ($search) {
@@ -91,7 +91,9 @@ class AdminController extends Controller
         }
 
         $gurus = $query->latest()->paginate(20)->withQueryString();
-        return view('admin.data-guru', compact('gurus', 'search'));
+        $allKelas = Kelas::orderBy('nama_kelas', 'asc')->get();
+
+        return view('admin.data-guru', compact('gurus', 'search', 'allKelas'));
     }
 
     public function storeGuru(Request $request)
@@ -100,14 +102,20 @@ class AdminController extends Controller
             'name'     => 'required|string|max:255',
             'username' => 'required|string|max:50|unique:users,username',
             'password' => 'required|string|min:6',
+            'kelas_ids'=> 'nullable|array',
+            'kelas_ids.*' => 'exists:kelas,id',
         ]);
 
-        User::create([
+        $guru = User::create([
             'name'     => $request->name,
             'username' => $request->username,
             'password' => Hash::make($request->password),
             'role'     => 'guru',
         ]);
+
+        if ($request->has('kelas_ids')) {
+            $guru->kelasMengajar()->sync($request->kelas_ids);
+        }
 
         return back()->with('success', 'Akun guru berhasil ditambahkan!');
     }
@@ -119,6 +127,8 @@ class AdminController extends Controller
         $request->validate([
             'name'     => 'required|string|max:255',
             'username' => 'required|string|max:50|unique:users,username,' . $guru->id,
+            'kelas_ids'=> 'nullable|array',
+            'kelas_ids.*' => 'exists:kelas,id',
         ]);
 
         $guru->update([
@@ -126,7 +136,25 @@ class AdminController extends Controller
             'username' => $request->username,
         ]);
 
+        if ($request->has('kelas_ids')) {
+            $guru->kelasMengajar()->sync($request->kelas_ids);
+        }
+
         return back()->with('success', 'Data guru berhasil diperbarui!');
+    }
+
+    public function updateGuruPengampu(Request $request, $id)
+    {
+        $guru = User::where('role', 'guru')->findOrFail($id);
+
+        $request->validate([
+            'kelas_ids'   => 'nullable|array',
+            'kelas_ids.*' => 'exists:kelas,id',
+        ]);
+
+        $guru->kelasMengajar()->sync($request->input('kelas_ids', []));
+
+        return back()->with('success', "Penugasan kelas untuk {$guru->name} berhasil diperbarui!");
     }
 
     public function destroyGuru($id)
@@ -149,27 +177,26 @@ class AdminController extends Controller
     }
 
     // ==========================================
-    // MANAJEMEN KELAS (CRUD — Duplikasi dari GuruController)
+    // MANAJEMEN KELAS (DARI GURU CONTROLLER)
     // ==========================================
     public function dataKelas()
     {
-        $kelas = Kelas::withCount('siswas')->orderBy('tingkat')->orderBy('nama_kelas')->get();
+        $kelas = Kelas::all();
         return view('admin.data-kelas', compact('kelas'));
     }
 
     public function storeKelas(Request $request)
     {
         $request->validate([
-            'nama_kelas' => 'required|string|max:100',
-            'tingkat'    => 'required|string|max:20',
+            'nama_kelas' => 'required|string|max:255',
         ]);
 
         Kelas::create([
             'nama_kelas' => $request->nama_kelas,
-            'tingkat'    => $request->tingkat,
+            'tingkat'    => 'VII',
         ]);
 
-        return back()->with('success', 'Kelas berhasil ditambahkan!');
+        return back()->with('success', 'Data kelas berhasil ditambahkan!');
     }
 
     public function destroyKelas($id)
@@ -184,57 +211,71 @@ class AdminController extends Controller
     }
 
     // ==========================================
-    // MANAJEMEN SISWA (CRUD — Duplikasi dari GuruController)
+    // MANAJEMEN SISWA (DARI GURU CONTROLLER)
     // ==========================================
     public function dataSiswa(Request $request)
     {
-        $kelas = Kelas::all();
+        $kelas = Kelas::withCount('siswas')->get();
         $kelas_id = $request->kelas_id;
-        $search   = $request->search;
+        $search = $request->search;
+        $selectedKelas = $kelas_id ? Kelas::find($kelas_id) : null;
 
-        $query = Siswa::with(['user', 'kelas']);
+        if (!$kelas_id && !$search) {
+            $siswas = collect();
+            return view('admin.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search', 'selectedKelas'));
+        }
 
+        $query = Siswa::with('user', 'kelas')
+            ->orderByRaw('CAST(nis AS UNSIGNED) ASC, nis ASC');
+        
         if ($kelas_id) {
             $query->where('kelas_id', $kelas_id);
         }
-
+        
         if ($search) {
             $query->where(function ($q) use ($search) {
-                $q->where('nis', 'like', "%$search%")
-                  ->orWhereHas('user', function ($q2) use ($search) {
-                      $q2->where('name', 'like', "%$search%")
-                         ->orWhere('username', 'like', "%$search%");
+                $q->where('nis', 'like', "%{$search}%")
+                  ->orWhereHas('user', function($uq) use ($search) {
+                      $uq->where('name', 'like', "%{$search}%");
                   });
             });
         }
-
-        $siswas = $query->orderBy('kelas_id')->latest()->paginate(25)->withQueryString();
-
-        return view('admin.data-siswa', compact('kelas', 'siswas', 'kelas_id', 'search'));
+        
+        // Tampilkan seluruh siswa satu kelas dalam satu halaman penuh (misal 32 siswa)
+        $siswas = $query->get();
+        
+        return view('admin.data-siswa', compact('siswas', 'kelas', 'kelas_id', 'search', 'selectedKelas'));
     }
 
     public function storeSiswa(Request $request)
     {
         $request->validate([
+            'nis'      => 'required|unique:siswas,nis',
             'name'     => 'required|string|max:255',
-            'nis'      => 'required|string|max:30|unique:siswas,nis',
             'kelas_id' => 'required|exists:kelas,id',
         ]);
 
-        $user = User::create([
-            'name'     => $request->name,
-            'username' => $request->nis,
-            'password' => Hash::make($request->nis),
-            'role'     => 'siswa',
-        ]);
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'name'     => $request->name,
+                'username' => $request->nis,
+                'password' => Hash::make($request->nis),
+                'role'     => 'siswa',
+            ]);
 
-        Siswa::create([
-            'user_id'  => $user->id,
-            'kelas_id' => $request->kelas_id,
-            'nis'      => $request->nis,
-        ]);
+            Siswa::create([
+                'user_id'  => $user->id,
+                'kelas_id' => $request->kelas_id,
+                'nis'      => $request->nis,
+            ]);
 
-        return back()->with('success', 'Siswa berhasil ditambahkan! Username & Password default = NIS.');
+            DB::commit();
+            return back()->with('success', 'Data siswa berhasil ditambahkan!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['Gagal menambahkan siswa: ' . $e->getMessage()]);
+        }
     }
 
     public function updateSiswa(Request $request, $id)
@@ -242,119 +283,188 @@ class AdminController extends Controller
         $siswa = Siswa::with('user')->findOrFail($id);
 
         $request->validate([
+            'nis'      => 'required|unique:siswas,nis,' . $siswa->id,
             'name'     => 'required|string|max:255',
-            'nis'      => 'required|string|max:30|unique:siswas,nis,' . $siswa->id,
             'kelas_id' => 'required|exists:kelas,id',
         ]);
 
-        $siswa->user->update([
-            'name'     => $request->name,
-            'username' => $request->nis,
-        ]);
+        DB::beginTransaction();
+        try {
+            $siswa->update([
+                'nis'      => $request->nis,
+                'kelas_id' => $request->kelas_id,
+            ]);
 
-        $siswa->update([
-            'nis'      => $request->nis,
-            'kelas_id' => $request->kelas_id,
-        ]);
+            if ($siswa->user) {
+                $siswa->user->update([
+                    'name'     => $request->name,
+                    'username' => $request->nis,
+                ]);
+            }
 
-        return back()->with('success', 'Data siswa berhasil diperbarui!');
+            DB::commit();
+            return back()->with('success', 'Data siswa berhasil diperbarui!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['Gagal memperbarui siswa: ' . $e->getMessage()]);
+        }
     }
 
     public function destroySiswa($id)
     {
         $siswa = Siswa::with('user')->findOrFail($id);
-        $nama  = $siswa->user->name;
+        $nama  = $siswa->user->name ?? $siswa->nis;
 
-        // Hapus user (cascade: siswa, absensi, nilai ikut terhapus)
-        $siswa->user->delete();
+        // Menghapus user akan otomatis menghapus siswa karena foreign key cascade
+        if ($siswa->user) {
+            $siswa->user->delete();
+        } else {
+            $siswa->delete();
+        }
 
-        return back()->with('success', "Siswa $nama berhasil dihapus!");
+        return back()->with('success', "Data siswa $nama berhasil dihapus!");
     }
 
     public function resetPasswordSiswa($id)
     {
         $siswa = Siswa::with('user')->findOrFail($id);
-        $siswa->user->update([
-            'password' => Hash::make($siswa->nis),
-        ]);
-
-        return back()->with('success', "Password siswa {$siswa->user->name} berhasil direset ke NIS: {$siswa->nis}");
+        if ($siswa->user) {
+            $siswa->user->update([
+                'password' => Hash::make($siswa->nis),
+                'username' => $siswa->nis,
+            ]);
+            return back()->with('success', "Username dan Password siswa {$siswa->user->name} berhasil di-reset ke NIS: {$siswa->nis}");
+        }
+        return back()->withErrors(['Akun user untuk siswa ini tidak ditemukan.']);
     }
 
     public function importSiswa(Request $request)
     {
         $request->validate([
-            'file'     => 'required|file|mimes:csv,txt',
             'kelas_id' => 'required|exists:kelas,id',
+            'file'     => 'required|mimes:csv,txt'
         ]);
 
-        $kelas_id = $request->kelas_id;
         $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
+        $handle = fopen($file->getPathname(), "r");
+        
+        $header = fgetcsv($handle, 1000, ";");
+        
+        $rows = [];
+        $nisList = [];
+        while (($data = fgetcsv($handle, 1000, ";")) !== FALSE) {
+            $nis = trim($data[0] ?? '');
+            $nama = trim($data[1] ?? '');
+            
+            if ($nis && $nama) {
+                $rows[] = ['nis' => $nis, 'nama' => $nama];
+                $nisList[] = $nis;
+            }
+        }
+        fclose($handle);
 
-        // Skip header row
-        $header = fgetcsv($handle, 1000, ',');
-
-        $imported = 0;
-        $skipped  = 0;
-        $errors   = [];
+        $existingNis = Siswa::whereIn('nis', $nisList)->pluck('nis')->toArray();
+        $count = 0;
 
         DB::beginTransaction();
         try {
-            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                if (count($row) < 2) continue;
+            $userInserts = [];
+            $newNisList = [];
+            $now = now();
 
-                $nis  = trim($row[0]);
-                $name = trim($row[1]);
-
-                if (empty($nis) || empty($name)) continue;
-
-                // Skip jika NIS sudah ada
-                if (Siswa::where('nis', $nis)->exists()) {
-                    $skipped++;
+            foreach ($rows as $row) {
+                if (in_array($row['nis'], $existingNis)) {
                     continue;
                 }
 
-                // Skip jika username sudah ada
-                if (User::where('username', $nis)->exists()) {
-                    $skipped++;
-                    continue;
-                }
-
-                $user = User::create([
-                    'name'     => $name,
-                    'username' => $nis,
-                    'password' => Hash::make($nis),
-                    'role'     => 'siswa',
-                ]);
-
-                Siswa::create([
-                    'user_id'  => $user->id,
-                    'kelas_id' => $kelas_id,
-                    'nis'      => $nis,
-                ]);
-
-                $imported++;
+                $userInserts[] = [
+                    'name'       => $row['nama'],
+                    'username'   => $row['nis'],
+                    'password'   => Hash::make($row['nis']),
+                    'role'       => 'siswa',
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+                
+                $existingNis[] = $row['nis'];
+                $newNisList[]  = $row['nis'];
             }
 
-            fclose($handle);
+            if (!empty($userInserts)) {
+                foreach (array_chunk($userInserts, 100) as $chunk) {
+                    User::insert($chunk);
+                }
+
+                $createdUsers = User::whereIn('username', $newNisList)
+                    ->pluck('id', 'username');
+
+                $siswaInserts = [];
+                foreach ($newNisList as $nis) {
+                    if (isset($createdUsers[$nis])) {
+                        $siswaInserts[] = [
+                            'user_id'    => $createdUsers[$nis],
+                            'kelas_id'   => $request->kelas_id,
+                            'nis'        => $nis,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ];
+                        $count++;
+                    }
+                }
+
+                if (!empty($siswaInserts)) {
+                    foreach (array_chunk($siswaInserts, 100) as $chunk) {
+                        Siswa::insert($chunk);
+                    }
+                }
+            }
             DB::commit();
-
-            $message = "Berhasil import $imported siswa.";
-            if ($skipped > 0) {
-                $message .= " ($skipped data dilewati karena NIS sudah ada)";
-            }
-
-            return back()->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            fclose($handle);
-            return back()->withErrors(['Gagal import: ' . $e->getMessage()]);
+            return back()->withErrors(['Gagal mengimpor data: ' . $e->getMessage()]);
         }
+
+        return back()->with('success', "$count data siswa berhasil diimpor!");
+    }
+
+    public function exportSiswa(Request $request)
+    {
+        $kelas_id = $request->kelas_id;
+        if (!$kelas_id) return back()->withErrors(['Kelas harus dipilih untuk export!']);
+
+        $siswas = Siswa::where('kelas_id', $kelas_id)->with('user')->get();
+        $kelas = Kelas::find($kelas_id);
+        
+        $filename = "data_siswa_" . str_replace(' ', '_', $kelas->nama_kelas) . ".csv";
+        $headers = array(
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        );
+
+        $columns = array('Nomer Induk', 'Nama Lengkap');
+
+        $callback = function() use($siswas, $columns) {
+            $file = fopen('php://output', 'w');
+            
+            // Tambahkan BOM agar Excel membaca file sebagai UTF-8 secara native
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            fputcsv($file, $columns, ';');
+
+            foreach ($siswas as $siswa) {
+                fputcsv($file, array($siswa->nis, $siswa->user->name ?? ''), ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     // ==========================================
-    // PENGATURAN WEBSITE (Duplikasi dari GuruController)
+    // PENGATURAN WEBSITE
     // ==========================================
     public function pengaturan()
     {

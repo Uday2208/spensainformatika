@@ -55,6 +55,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Kelas yang diampu oleh guru ini.
+     */
+    public function kelasMengajar()
+    {
+        return $this->belongsToMany(Kelas::class, 'guru_kelas', 'user_id', 'kelas_id')->withTimestamps();
+    }
+
+    /**
      * Get the avatar URL or data URI.
      */
     public function getAvatarUrlAttribute(): string

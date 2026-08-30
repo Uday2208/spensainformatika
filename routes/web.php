@@ -38,6 +38,7 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::put('/admin/data-guru/{id}', [AdminController::class, 'updateGuru'])->name('admin.guru.update');
         Route::delete('/admin/data-guru/{id}', [AdminController::class, 'destroyGuru'])->name('admin.guru.destroy');
         Route::post('/admin/data-guru/{id}/reset-password', [AdminController::class, 'resetPasswordGuru'])->name('admin.guru.reset-password');
+        Route::post('/admin/guru/{id}/pengampu', [AdminController::class, 'updateGuruPengampu'])->name('admin.guru.pengampu');
 
         // Manajemen Kelas
         Route::get('/admin/data-kelas', [AdminController::class, 'dataKelas'])->name('admin.kelas.index');
@@ -51,6 +52,7 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::delete('/admin/data-siswa/{id}', [AdminController::class, 'destroySiswa'])->name('admin.siswa.destroy');
         Route::post('/admin/data-siswa/{id}/reset-password', [AdminController::class, 'resetPasswordSiswa'])->name('admin.siswa.reset-password');
         Route::post('/admin/import-siswa', [AdminController::class, 'importSiswa'])->name('admin.siswa.import');
+        Route::get('/admin/export-siswa', [AdminController::class, 'exportSiswa'])->name('admin.siswa.export');
 
         // Pengaturan
         Route::get('/admin/pengaturan', [AdminController::class, 'pengaturan'])->name('admin.pengaturan');
@@ -69,16 +71,6 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/materi', [GuruController::class, 'materi']);
         Route::post('/materi', [GuruController::class, 'storeMateri']);
         Route::delete('/materi/{id}', [GuruController::class, 'destroyMateri']);
-        Route::get('/data-kelas', [GuruController::class, 'dataKelas']);
-        Route::post('/data-kelas', [GuruController::class, 'storeKelas']);
-        Route::delete('/data-kelas/{id}', [GuruController::class, 'destroyKelas']);
-        Route::get('/data-siswa', [GuruController::class, 'dataSiswa']);
-        Route::post('/data-siswa', [GuruController::class, 'storeSiswa']);
-        Route::put('/data-siswa/{id}', [GuruController::class, 'updateSiswa']);
-        Route::delete('/data-siswa/{id}', [GuruController::class, 'destroySiswa']);
-        Route::post('/data-siswa/{id}/reset-password', [GuruController::class, 'resetPasswordSiswa']);
-        Route::post('/import-siswa', [GuruController::class, 'importSiswa']);
-        Route::get('/export-siswa', [GuruController::class, 'exportSiswa']);
         Route::get('/absensi', [GuruController::class, 'absensi']);
         Route::post('/absensi', [GuruController::class, 'storeAbsensi']);
         Route::delete('/absensi/delete-by-date', [GuruController::class, 'destroyAbsensiByDate']);

@@ -54,7 +54,8 @@ class UjianController extends Controller
     public function show($id)
     {
         $ujian = Ujian::with(['kelasList', 'soals'])->findOrFail($id);
-        $allKelas = Kelas::all();
+        $user = \Illuminate\Support\Facades\Auth::user();
+        $allKelas = ($user && $user->isAdmin()) ? Kelas::all() : ($user ? $user->kelasMengajar()->orderBy('nama_kelas')->get() : Kelas::all());
         return view('guru.ujian.show', compact('ujian', 'allKelas'));
     }
 

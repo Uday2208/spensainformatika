@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Kelola Data Guru')
-@section('page_title', 'Kelola Data Guru')
+@section('page_title', 'Kelola Data Guru & Pengampu')
 @section('content')
 
 {{-- Flash Messages --}}
@@ -28,7 +28,9 @@
 <div x-data="{ 
     addModal: false, 
     editModal: false, 
-    editGuru: { id: '', name: '', username: '' } 
+    editGuru: { id: '', name: '', username: '' },
+    assignModal: false,
+    assignGuru: { id: '', name: '', kelas_ids: [] }
 }">
 
     {{-- Banner Info Card --}}
@@ -40,9 +42,9 @@
             👨‍🏫
         </div>
         <div class="relative flex-1 min-w-0">
-            <h2 class="text-white font-bold text-base sm:text-lg leading-tight">Manajemen Akun Guru</h2>
+            <h2 class="text-white font-bold text-base sm:text-lg leading-tight">Manajemen Akun Guru & Penugasan Kelas</h2>
             <p class="text-blue-200 text-xs sm:text-sm mt-1 leading-relaxed">
-                Kelola data akun pengajar/guru, pembuatan akun baru, pembaruan data, serta reset kata sandi akun guru SPENSA.
+                Kelola akun pengajar dan atur penugasan rombel (kelas yang diampu). Guru hanya dapat mengabsen, menilai, dan membuat ujian pada kelas yang ditugaskan.
             </p>
         </div>
     </div>
@@ -97,13 +99,13 @@
                 </div>
                 <div>
                     <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
-                        Daftar Guru Pengajar
+                        Daftar Guru Pengajar & Kelas yang Diampu
                         @if($search)
                             <span class="text-xs font-normal text-slate-500">(Hasil pencarian: "{{ $search }}")</span>
                         @endif
                     </h3>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Menampilkan data akun guru yang terdaftar dalam sistem.
+                        Klik tombol <strong>Atur Kelas</strong> untuk menentukan rombel yang boleh diakses guru tersebut.
                     </p>
                 </div>
             </div>
@@ -136,10 +138,11 @@
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-600 uppercase font-bold text-[11px] border-b border-slate-200 tracking-wider">
                             <th class="py-3.5 px-4 w-12 text-center">No</th>
-                            <th class="py-3.5 px-4">Nama</th>
-                            <th class="py-3.5 px-4 w-48">Username</th>
-                            <th class="py-3.5 px-4 w-44">Tgl Dibuat</th>
-                            <th class="py-3.5 px-4 text-center w-36">Aksi</th>
+                            <th class="py-3.5 px-4">Nama Guru</th>
+                            <th class="py-3.5 px-4 w-40">Username</th>
+                            <th class="py-3.5 px-4">Kelas yang Diampu</th>
+                            <th class="py-3.5 px-4 w-36">Tgl Dibuat</th>
+                            <th class="py-3.5 px-4 text-center w-48">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -166,11 +169,35 @@
                                         {{ $guru->username }}
                                     </span>
                                 </td>
+                                <td class="py-3.5 px-4">
+                                    @if($guru->kelasMengajar && $guru->kelasMengajar->count() > 0)
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @foreach($guru->kelasMengajar as $km)
+                                                <span class="px-2 py-0.5 bg-emerald-50 text-emerald-800 text-[11px] font-extrabold rounded-md border border-emerald-200">
+                                                    {{ $km->nama_kelas }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-amber-600 italic bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                            Belum ada kelas
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="py-3.5 px-4 text-slate-500 text-xs">
-                                    {{ $guru->created_at ? $guru->created_at->translatedFormat('d M Y, H:i') : '-' }}
+                                    {{ $guru->created_at ? $guru->created_at->translatedFormat('d M Y') : '-' }}
                                 </td>
                                 <td class="py-3.5 px-4 text-center">
                                     <div class="flex items-center justify-center gap-1.5">
+                                        {{-- Tombol Atur Kelas Pengampu --}}
+                                        <button type="button" 
+                                                @click="assignGuru = { id: '{{ $guru->id }}', name: {{ json_encode($guru->name) }}, kelas_ids: {{ json_encode($guru->kelasMengajar->pluck('id')->toArray()) }} }; assignModal = true" 
+                                                class="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-lg border border-indigo-200 text-xs transition-colors flex items-center gap-1" 
+                                                title="Atur Kelas yang Diampu">
+                                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                                            <span>Atur Kelas</span>
+                                        </button>
+
                                         {{-- Edit Button --}}
                                         <button type="button" 
                                                 @click="editGuru = { id: '{{ $guru->id }}', name: {{ json_encode($guru->name) }}, username: {{ json_encode($guru->username) }} }; editModal = true" 
@@ -232,6 +259,84 @@
     </div>
 
     {{-- ============================================================
+         MODAL ATUR KELAS PENGAMPU (TEACHER-CLASS ASSIGNMENT)
+         ============================================================ --}}
+    <div x-cloak 
+         x-show="assignModal" 
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+        
+        <div x-show="assignModal" 
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             x-transition:leave="transition ease-in duration-150"
+             x-transition:leave-start="opacity-100 scale-100"
+             x-transition:leave-end="opacity-0 scale-95"
+             class="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-lg border border-slate-100" 
+             @click.outside="assignModal = false">
+            
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-sm">
+                        🏫
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Atur Kelas yang Diampu</h3>
+                        <p class="text-xs text-slate-500">Guru: <strong class="text-indigo-700" x-text="assignGuru.name"></strong></p>
+                    </div>
+                </div>
+                <button type="button" @click="assignModal = false" class="w-7 h-7 rounded-full bg-slate-100 text-slate-500 hover:text-slate-700 hover:bg-slate-200 flex items-center justify-center text-xs transition-colors">✕</button>
+            </div>
+            
+            <form :action="`{{ url('/app/admin/guru') }}/${assignGuru.id}/pengampu`" method="POST" class="space-y-4">
+                @csrf
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-2">
+                        Pilih Rombel / Kelas yang Diampu:
+                    </label>
+                    <p class="text-[11px] text-slate-400 mb-3">Centang satu atau beberapa kelas yang menjadi tanggung jawab mengajar guru ini.</p>
+                    
+                    @if($allKelas->isEmpty())
+                        <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl text-center text-xs text-slate-500">
+                            Belum ada data kelas terdaftar. Tambahkan kelas terlebih dahulu di menu <strong>Data Kelas</strong>.
+                        </div>
+                    @else
+                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 max-h-60 overflow-y-auto p-2 bg-slate-50 border border-slate-200 rounded-2xl">
+                            @foreach($allKelas as $k)
+                                <label class="flex items-center gap-2.5 p-2.5 bg-white border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 transition-all text-xs font-bold text-slate-700">
+                                    <input type="checkbox" 
+                                           name="kelas_ids[]" 
+                                           value="{{ $k->id }}" 
+                                           :checked="assignGuru.kelas_ids.includes({{ $k->id }})"
+                                           class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                                    <span>{{ $k->nama_kelas }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
+
+                <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-800 text-xs leading-relaxed">
+                    💡 <strong>Catatan:</strong> Guru hanya dapat melihat presensi, menginput nilai, dan membuat ujian CBT pada kelas-kelas yang telah dicentang di atas.
+                </div>
+
+                <div class="pt-2 flex justify-end gap-2">
+                    <button type="button" 
+                            @click="assignModal = false" 
+                            class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" 
+                            class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs shadow-md transition-all">
+                        Simpan Penugasan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- ============================================================
          MODAL TAMBAH GURU
          ============================================================ --}}
     <div x-cloak 
@@ -290,7 +395,7 @@
                 </div>
                 
                 <div class="p-3 bg-blue-50 border border-blue-100 rounded-xl text-blue-800 text-xs">
-                    💡 <strong>Info:</strong> Akun yang dibuat akan memiliki hak akses sebagai <strong>Guru</strong>.
+                    💡 <strong>Info:</strong> Akun yang dibuat akan memiliki hak akses sebagai <strong>Guru</strong>. Penugasan kelas dapat diatur setelah akun dibuat.
                 </div>
 
                 <div class="pt-2 flex justify-end gap-2">
