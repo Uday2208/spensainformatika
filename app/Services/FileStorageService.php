@@ -61,7 +61,7 @@ class FileStorageService
         }
 
         // Jika data adalah Base64 Data URI, tidak ada file fisik yang perlu dihapus
-        if (Str::startsWith($filename, 'data:image')) {
+        if (Str::startsWith($filename, 'data:')) {
             return true;
         }
 
@@ -97,8 +97,8 @@ class FileStorageService
             return $filename;
         }
 
-        // Jika Base64 Data URI
-        if (Str::startsWith($filename, 'data:image')) {
+        // Jika Base64 Data URI (gambar, pdf, dokumen)
+        if (Str::startsWith($filename, 'data:')) {
             return $filename;
         }
 

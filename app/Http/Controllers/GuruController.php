@@ -1299,7 +1299,10 @@ class GuruController extends Controller
             'deadline' => 'nullable|date',
             'deskripsi' => 'nullable|string',
             'link' => 'nullable|url',
-            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:10240',
+            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:4096',
+        ], [
+            'file_tugas.max' => 'Ukuran berkas tugas maksimal 4 MB. Untuk file berukuran lebih besar, silakan gunakan kolom tautan Google Drive / link eksternal.',
+            'file_tugas.mimes' => 'Format berkas harus berupa PDF, Word, Excel, PPT, Zip, RAR, atau Gambar.',
         ]);
 
         $data = [
@@ -1363,7 +1366,10 @@ class GuruController extends Controller
             'deadline' => 'nullable|date',
             'deskripsi' => 'nullable|string',
             'link' => 'nullable|url',
-            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:10240',
+            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:4096',
+        ], [
+            'file_tugas.max' => 'Ukuran berkas tugas maksimal 4 MB. Untuk file berukuran lebih besar, silakan gunakan kolom tautan Google Drive / link eksternal.',
+            'file_tugas.mimes' => 'Format berkas harus berupa PDF, Word, Excel, PPT, Zip, RAR, atau Gambar.',
         ]);
 
         $firstSiswa = Siswa::find($request->siswa_ids[0]);

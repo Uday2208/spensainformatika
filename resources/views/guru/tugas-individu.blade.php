@@ -202,10 +202,30 @@
                 </div>
 
                 <!-- Dokumen Lampiran -->
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider mb-1.5">Lampiran Dokumen / Soal (Opsional)</label>
-                    <input type="file" name="file_tugas" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png" class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded-xl p-1 bg-slate-50">
-                    <p class="text-[11px] text-slate-400 mt-1">Maks 10MB (PDF, Word, Excel, PPT, Zip, Gambar).</p>
+                <div x-data="{
+                    checkFileSize(e) {
+                        const file = e.target.files[0];
+                        if (file && file.size > 4 * 1024 * 1024) {
+                            alert('Ukuran berkas terlalu besar (' + (file.size / (1024 * 1024)).toFixed(1) + ' MB).\n\nBatas maksimal unggah langsung adalah 4 MB.\nUntuk berkas berukuran lebih besar, silakan gunakan kolom Tautan Referensi Eksternal (Google Drive).');
+                            e.target.value = '';
+                        }
+                    }
+                }">
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="block text-xs font-bold text-slate-600 uppercase tracking-wider">Lampiran Dokumen / Soal</label>
+                        <span class="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">Maks 4 MB</span>
+                    </div>
+                    <input type="file" 
+                           name="file_tugas" 
+                           @change="checkFileSize($event)"
+                           accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.jpg,.jpeg,.png" 
+                           class="w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-200 rounded-xl p-1 bg-slate-50">
+                    <div class="mt-1.5 p-2 bg-blue-50/60 rounded-lg border border-blue-100 flex items-start gap-1.5">
+                        <span class="text-blue-600 text-xs mt-0.5">ℹ️</span>
+                        <p class="text-[11px] text-blue-800 leading-tight">
+                            Format: <strong>PDF, Word, Excel, PPT, Zip, Gambar</strong> (maks 4 MB). Untuk modul/buku besar, silakan cantumkan link Google Drive di bawah.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Link Eksternal -->
