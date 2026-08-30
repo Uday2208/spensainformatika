@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Komentar;
 use App\Models\Setting;
 use App\Models\Materi;
+use App\Models\Tugas;
 use App\Models\Artikel;
 use App\Models\PenilaianHarian;
 use App\Models\JurnalMengajar;
@@ -1264,149 +1265,86 @@ class GuruController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    public function materi(Request $request)
+    // ==========================================
+    // TUGAS SISWA (KBM)
+    // ==========================================
+    public function tugas(Request $request)
     {
-        $query = Materi::latest();
+        $kelas = $this->getKelasGuru();
+        $kelasIds = $kelas->pluck('id');
+        
+        // Siswa di kelas yang diampu guru untuk opsi tugas individu
+        $siswas = Siswa::whereIn('kelas_id', $kelasIds)
+            ->with(['user', 'kelas'])
+            ->get()
+            ->sortBy(['kelas.nama_kelas', 'user.name']);
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('judul', 'like', "%{$search}%")
-                  ->orWhere('deskripsi', 'like', "%{$search}%");
-            });
+        $query = Tugas::where('guru_id', auth()->id())
+            ->with(['kelas', 'siswa.user']);
+
+        if ($request->filled('kelas_id')) {
+            $query->where('kelas_id', $request->kelas_id);
         }
 
-        $materis = $query->paginate(20)->withQueryString();
-        return view('guru.materi', compact('materis'));
+        if ($request->filled('tipe_target')) {
+            $query->where('tipe_target', $request->tipe_target);
+        }
+
+        $tugasList = $query->latest()->paginate(15)->withQueryString();
+
+        return view('guru.tugas', compact('tugasList', 'kelas', 'siswas'));
     }
 
-    public function storeMateri(Request $request)
+    public function storeTugas(Request $request)
     {
         $request->validate([
             'judul' => 'required|string|max:255',
+            'tipe_target' => 'required|in:kelas,individu',
+            'kelas_id' => 'required_if:tipe_target,kelas|nullable|exists:kelas,id',
+            'siswa_id' => 'required_if:tipe_target,individu|nullable|exists:siswas,id',
+            'deadline' => 'nullable|date',
             'deskripsi' => 'nullable|string',
             'link' => 'nullable|url',
-            'foto' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'file_materi' => 'nullable|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,jpg,jpeg,png,zip,rar|max:5120'
+            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:10240',
         ]);
 
-        $data = $request->only(['judul', 'deskripsi', 'link']);
-
-        if ($request->hasFile('foto')) {
-            $data['foto'] = \App\Services\FileStorageService::upload($request->file('foto'), 'materi');
+        $kelasId = $request->kelas_id;
+        // Jika target individu, ambil kelas_id dari siswa jika tidak dipilih
+        if ($request->tipe_target === 'individu' && $request->filled('siswa_id')) {
+            $siswa = Siswa::find($request->siswa_id);
+            $kelasId = $siswa ? $siswa->kelas_id : null;
         }
-
-        if ($request->hasFile('file_materi')) {
-            $data['file_materi'] = \App\Services\FileStorageService::upload($request->file('file_materi'), 'materi');
-        }
-
-        Materi::create($data);
-
-        return back()->with('success', 'Materi berhasil diunggah!');
-    }
-
-    public function destroyMateri($id)
-    {
-        $materi = Materi::findOrFail($id);
-
-        if ($materi->foto) {
-            \App\Services\FileStorageService::delete($materi->foto, 'materi');
-        }
-
-        if ($materi->file_materi) {
-            \App\Services\FileStorageService::delete($materi->file_materi, 'materi');
-        }
-
-        $materi->delete();
-
-        return back()->with('success', 'Materi berhasil dihapus!');
-    }
-
-    public function artikel()
-    {
-        $artikels = Artikel::latest()->paginate(10);
-        return view('guru.artikel', compact('artikels'));
-    }
-
-    public function storeArtikel(Request $request)
-    {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'konten' => 'required|string',
-            'gambar.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,jfif,avif|max:5120'
-        ]);
 
         $data = [
+            'guru_id' => auth()->id(),
             'judul' => $request->judul,
-            'slug' => \Illuminate\Support\Str::slug($request->judul),
-            'konten' => $request->konten,
+            'deskripsi' => $request->deskripsi,
+            'tipe_target' => $request->tipe_target,
+            'kelas_id' => $kelasId,
+            'siswa_id' => $request->tipe_target === 'individu' ? $request->siswa_id : null,
+            'deadline' => $request->deadline,
+            'link' => $request->link,
         ];
 
-        $uploadedImages = [];
-        if ($request->hasFile('gambar')) {
-            foreach ($request->file('gambar') as $file) {
-                $uploadedImages[] = \App\Services\FileStorageService::upload($file, 'artikel');
-            }
+        if ($request->hasFile('file_tugas')) {
+            $data['file_tugas'] = \App\Services\FileStorageService::upload($request->file('file_tugas'), 'tugas');
         }
 
-        if (count($uploadedImages) > 0) {
-            $data['gambar'] = $uploadedImages;
-        }
+        Tugas::create($data);
 
-        Artikel::create($data);
-
-        return back()->with('success', 'Artikel berhasil dipublikasikan!');
+        return back()->with('success', 'Tugas berhasil dibuat dan dibagikan ke siswa!');
     }
 
-    public function updateArtikel(Request $request, $id)
+    public function destroyTugas($id)
     {
-        $request->validate([
-            'judul' => 'required|string|max:255',
-            'konten' => 'required|string',
-            'gambar.*' => 'nullable|file|mimes:jpeg,png,jpg,gif,webp,jfif,avif|max:5120'
-        ]);
+        $tugas = Tugas::where('id', $id)->where('guru_id', auth()->id())->firstOrFail();
 
-        $artikel = Artikel::findOrFail($id);
-
-        $artikel->judul = $request->judul;
-        if (\Illuminate\Support\Facades\Schema::hasColumn('artikels', 'slug')) {
-            $artikel->slug = \Illuminate\Support\Str::slug($request->judul);
-        }
-        $artikel->konten = $request->konten;
-
-        if ($request->hasFile('gambar')) {
-            // Hapus gambar lama jika ada
-            if ($artikel->gambar && is_array($artikel->gambar)) {
-                foreach ($artikel->gambar as $img) {
-                    \App\Services\FileStorageService::delete($img, 'artikel');
-                }
-            }
-
-            $uploadedImages = [];
-            foreach ($request->file('gambar') as $file) {
-                $uploadedImages[] = \App\Services\FileStorageService::upload($file, 'artikel');
-            }
-
-            $artikel->gambar = $uploadedImages;
+        if ($tugas->file_tugas) {
+            \App\Services\FileStorageService::delete($tugas->file_tugas, 'tugas');
         }
 
-        $artikel->save();
+        $tugas->delete();
 
-        return back()->with('success', 'Artikel berhasil diperbarui!');
-    }
-
-    public function destroyArtikel($id)
-    {
-        $artikel = Artikel::findOrFail($id);
-
-        if ($artikel->gambar && is_array($artikel->gambar)) {
-            foreach ($artikel->gambar as $img) {
-                \App\Services\FileStorageService::delete($img, 'artikel');
-            }
-        }
-
-        $artikel->delete();
-
-        return back()->with('success', 'Artikel berhasil dihapus!');
+        return back()->with('success', 'Tugas berhasil dihapus!');
     }
 }

@@ -12,6 +12,8 @@ use App\Models\Ujian;
 use App\Models\HasilUjian;
 use App\Models\Setting;
 use App\Models\Komentar;
+use App\Models\Artikel;
+use App\Services\FileStorageService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -559,5 +561,83 @@ class AdminController extends Controller
     {
         Komentar::findOrFail($id)->delete();
         return back()->with('success', 'Komentar siswa berhasil dihapus!');
+    }
+
+    // ==========================================
+    // MANAJEMEN ARTIKEL WEB
+    // ==========================================
+    public function artikel()
+    {
+        $artikels = Artikel::latest()->paginate(15);
+        return view('admin.artikel', compact('artikels'));
+    }
+
+    public function storeArtikel(Request $request)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'konten' => 'required',
+            'gambar.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120'
+        ]);
+
+        $gambarPaths = [];
+        if ($request->hasFile('gambar')) {
+            foreach ($request->file('gambar') as $file) {
+                $gambarPaths[] = FileStorageService::upload($file, 'artikels');
+            }
+        }
+
+        Artikel::create([
+            'judul' => $request->judul,
+            'konten' => $request->konten,
+            'gambar' => !empty($gambarPaths) ? $gambarPaths : null
+        ]);
+
+        return back()->with('success', 'Artikel berhasil diterbitkan!');
+    }
+
+    public function updateArtikel(Request $request, $id)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'konten' => 'required',
+            'gambar.*' => 'image|mimes:jpeg,png,jpg,gif|max:5120'
+        ]);
+
+        $artikel = Artikel::findOrFail($id);
+
+        $gambarPaths = $artikel->gambar ?? [];
+        if ($request->hasFile('gambar')) {
+            if (!empty($gambarPaths) && is_array($gambarPaths)) {
+                foreach ($gambarPaths as $oldGbr) {
+                    FileStorageService::delete($oldGbr, 'artikels');
+                }
+            }
+            $gambarPaths = [];
+            foreach ($request->file('gambar') as $file) {
+                $gambarPaths[] = FileStorageService::upload($file, 'artikels');
+            }
+        }
+
+        $artikel->update([
+            'judul' => $request->judul,
+            'konten' => $request->konten,
+            'gambar' => !empty($gambarPaths) ? $gambarPaths : null
+        ]);
+
+        return back()->with('success', 'Artikel berhasil diperbarui!');
+    }
+
+    public function destroyArtikel($id)
+    {
+        $artikel = Artikel::findOrFail($id);
+        if (!empty($artikel->gambar) && is_array($artikel->gambar)) {
+            foreach ($artikel->gambar as $gbr) {
+                FileStorageService::delete($gbr, 'artikels');
+            }
+        }
+        $artikel->delete();
+
+        return back()->with('success', 'Artikel berhasil dihapus!');
     }
 }

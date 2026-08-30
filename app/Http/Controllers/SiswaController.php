@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\User;
 use App\Models\Komentar;
 use App\Models\Materi;
+use App\Models\Tugas;
 use Carbon\Carbon;
 
 class SiswaController extends Controller
@@ -79,14 +80,25 @@ class SiswaController extends Controller
     }
 
     /**
-     * Halaman Khusus Materi Pembelajaran Siswa
+     * Halaman Tugas Siswa (Per Rombel & Individu)
      */
-    public function materi(Request $request)
+    public function tugas(Request $request)
     {
         $siswa = Auth::user()->siswa()->with(['kelas'])->first();
-        
-        $query = Materi::select('id', 'judul', 'deskripsi', 'foto', 'file_materi', 'link', 'created_at')
-            ->orderBy('created_at', 'desc');
+        if (!$siswa) {
+            return redirect('/login');
+        }
+
+        $query = Tugas::with(['guru', 'kelas'])
+            ->where(function($q) use ($siswa) {
+                $q->where(function($qKelas) use ($siswa) {
+                    $qKelas->where('tipe_target', 'kelas')
+                           ->where('kelas_id', $siswa->kelas_id);
+                })->orWhere(function($qIndividu) use ($siswa) {
+                    $qIndividu->where('tipe_target', 'individu')
+                              ->where('siswa_id', $siswa->id);
+                });
+            });
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -96,9 +108,14 @@ class SiswaController extends Controller
             });
         }
 
-        $materis = $query->paginate(12)->withQueryString();
+        $tugasList = $query->latest()->paginate(12)->withQueryString();
 
-        return view('siswa.materi', compact('siswa', 'materis'));
+        return view('siswa.tugas', compact('siswa', 'tugasList'));
+    }
+
+    public function materi(Request $request)
+    {
+        return redirect()->route('siswa.tugas');
     }
 
     /**

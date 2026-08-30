@@ -58,6 +58,12 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/admin/kelola-komentar', [AdminController::class, 'kelolaKomentar'])->name('admin.komentar.index');
         Route::delete('/admin/komentar/{id}', [AdminController::class, 'destroyKomentar'])->name('admin.komentar.destroy');
 
+        // Artikel Web
+        Route::get('/admin/artikel', [AdminController::class, 'artikel'])->name('admin.artikel.index');
+        Route::post('/admin/artikel', [AdminController::class, 'storeArtikel'])->name('admin.artikel.store');
+        Route::put('/admin/artikel/{id}', [AdminController::class, 'updateArtikel'])->name('admin.artikel.update');
+        Route::delete('/admin/artikel/{id}', [AdminController::class, 'destroyArtikel'])->name('admin.artikel.destroy');
+
         // Pengaturan
         Route::get('/admin/pengaturan', [AdminController::class, 'pengaturan'])->name('admin.pengaturan');
         Route::post('/admin/pengaturan', [AdminController::class, 'storePengaturan'])->name('admin.pengaturan.store');
@@ -68,13 +74,12 @@ Route::prefix('app')->middleware('auth')->group(function () {
     // Guru Routes
     Route::middleware('role:guru')->group(function () {
         Route::get('/dashboard-guru', [GuruController::class, 'dashboard']);
-        Route::get('/artikel', [GuruController::class, 'artikel']);
-        Route::post('/artikel', [GuruController::class, 'storeArtikel']);
-        Route::put('/artikel/{id}', [GuruController::class, 'updateArtikel']);
-        Route::delete('/artikel/{id}', [GuruController::class, 'destroyArtikel']);
-        Route::get('/materi', [GuruController::class, 'materi']);
-        Route::post('/materi', [GuruController::class, 'storeMateri']);
-        Route::delete('/materi/{id}', [GuruController::class, 'destroyMateri']);
+
+        // ============ TUGAS SISWA (GURU) ============
+        Route::get('/tugas', [GuruController::class, 'tugas'])->name('guru.tugas.index');
+        Route::post('/tugas', [GuruController::class, 'storeTugas'])->name('guru.tugas.store');
+        Route::delete('/tugas/{id}', [GuruController::class, 'destroyTugas'])->name('guru.tugas.destroy');
+
         Route::get('/absensi', [GuruController::class, 'absensi']);
         Route::post('/absensi', [GuruController::class, 'storeAbsensi']);
         Route::delete('/absensi/delete-by-date', [GuruController::class, 'destroyAbsensiByDate']);
@@ -133,7 +138,8 @@ Route::prefix('app')->middleware('auth')->group(function () {
     Route::middleware('role:siswa')->group(function () {
         Route::get('/dashboard-siswa', [SiswaController::class, 'dashboard'])->name('siswa.dashboard');
         Route::get('/kehadiran-saya', [SiswaController::class, 'kehadiranSaya'])->name('siswa.kehadiran');
-        Route::get('/materi-siswa', [SiswaController::class, 'materi'])->name('siswa.materi');
+        Route::get('/tugas-siswa', [SiswaController::class, 'tugas'])->name('siswa.tugas');
+        Route::get('/materi-siswa', [SiswaController::class, 'tugas'])->name('siswa.materi');
         Route::get('/kesan-masukan', [SiswaController::class, 'kesanMasukan'])->name('siswa.kesan-masukan');
         Route::get('/profil-saya', [SiswaController::class, 'profilSaya'])->name('siswa.profil');
         Route::put('/profil', [SiswaController::class, 'updateProfil'])->name('siswa.profil.update');
