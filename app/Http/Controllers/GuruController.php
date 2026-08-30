@@ -54,9 +54,6 @@ class GuruController extends Controller
         $izinHariIni   = (int)($agregasiHariIni->izin ?? 0);
         $alphaHariIni  = (int)($agregasiHariIni->alpha ?? 0);
 
-        // Komentar baru (pending belum dilihat)
-        $totalKomentar = Komentar::count();
-
         // Data grafik kehadiran 7 hari terakhir (dari DB nyata)
         $startDate = now()->subDays(6)->toDateString();
         
@@ -84,7 +81,7 @@ class GuruController extends Controller
         return view('guru.dashboard', compact(
             'totalSiswa', 'totalKelas',
             'hadirHariIni', 'sakitHariIni', 'izinHariIni', 'alphaHariIni',
-            'sudahDiabsen', 'totalKomentar',
+            'sudahDiabsen',
             'chartLabels', 'chartData'
         ));
     }
@@ -926,21 +923,6 @@ class GuruController extends Controller
         }
 
         return back()->withErrors(["Tidak ada data nilai yang ditemukan untuk Materi/Bab: '$bab'."]);
-    }
-
-    public function kelolaKomentar()
-    {
-        $komentars = Komentar::with(['siswa.user', 'siswa.kelas'])->latest()->paginate(50)->withQueryString();
-        $limitSetting = Setting::where('key', 'komentar_homepage_limit')->first();
-        $limit = $limitSetting ? $limitSetting->value : 50;
-
-        return view('guru.kelola-komentar', compact('komentars', 'limit'));
-    }
-
-    public function destroyKomentar($id)
-    {
-        Komentar::findOrFail($id)->delete();
-        return back()->with('success', 'Komentar berhasil dihapus!');
     }
 
     public function rekapJurnal(Request $request)

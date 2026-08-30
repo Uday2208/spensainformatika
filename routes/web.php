@@ -54,6 +54,10 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::post('/admin/import-siswa', [AdminController::class, 'importSiswa'])->name('admin.siswa.import');
         Route::get('/admin/export-siswa', [AdminController::class, 'exportSiswa'])->name('admin.siswa.export');
 
+        // Moderasi Komentar
+        Route::get('/admin/kelola-komentar', [AdminController::class, 'kelolaKomentar'])->name('admin.komentar.index');
+        Route::delete('/admin/komentar/{id}', [AdminController::class, 'destroyKomentar'])->name('admin.komentar.destroy');
+
         // Pengaturan
         Route::get('/admin/pengaturan', [AdminController::class, 'pengaturan'])->name('admin.pengaturan');
         Route::post('/admin/pengaturan', [AdminController::class, 'storePengaturan'])->name('admin.pengaturan.store');
@@ -87,8 +91,6 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::put('/nilai/{id}', [GuruController::class, 'updateNilai']);
         Route::delete('/nilai/{id}', [GuruController::class, 'destroyNilai']);
         Route::delete('/nilai-by-bab', [GuruController::class, 'destroyNilaiByBab'])->name('guru.nilai.destroy-by-bab');
-        Route::get('/kelola-komentar', [GuruController::class, 'kelolaKomentar']);
-        Route::delete('/komentar/{id}', [GuruController::class, 'destroyKomentar']);
         Route::get('/rekap-absensi', [GuruController::class, 'rekapAbsensi']);
         Route::get('/rekap-absensi/export', [GuruController::class, 'exportRekapAbsensi']);
         Route::get('/rekap-absensi/siswa/{id}', [GuruController::class, 'rekapAbsensiSiswa']);

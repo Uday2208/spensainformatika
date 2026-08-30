@@ -81,17 +81,6 @@
             <h3 class="text-2xl font-black text-red-700">{{ $alphaHariIni }}</h3>
         </div>
     </div>
-
-    {{-- Komentar --}}
-    <div class="bg-violet-50 rounded-2xl border border-violet-200 shadow-sm p-4 flex items-center gap-3">
-        <div class="w-10 h-10 bg-violet-500 rounded-xl flex items-center justify-center flex-shrink-0">
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
-        </div>
-        <div>
-            <p class="text-[10px] font-bold text-violet-600 uppercase tracking-wide">Komentar</p>
-            <h3 class="text-2xl font-black text-violet-700">{{ $totalKomentar }}</h3>
-        </div>
-    </div>
 </div>
 
 {{-- BANNER ABSENSI HARI INI --}}
@@ -148,20 +137,20 @@
                 </div>
             </a>
 
-            <a href="{{ url('/app/data-kelas') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-colors group">
+            <a href="{{ url('/app/penilaian-harian') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 transition-colors group">
                 <div class="w-7 h-7 bg-blue-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-blue-500 transition-colors">
-                    <svg class="w-4 h-4 text-blue-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>
+                    <svg class="w-4 h-4 text-blue-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                 </div>
-                <h4 class="font-bold text-xs text-slate-800">Kelola Kelas</h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Atur data kelas</p>
+                <h4 class="font-bold text-xs text-slate-800">Nilai Keaktifan</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Penilaian harian</p>
             </a>
 
-            <a href="{{ url('/app/data-siswa') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-colors group">
+            <a href="{{ url('/app/ujian') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-indigo-50 hover:border-indigo-300 transition-colors group">
                 <div class="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-indigo-500 transition-colors">
-                    <svg class="w-4 h-4 text-indigo-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                    <svg class="w-4 h-4 text-indigo-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
                 </div>
-                <h4 class="font-bold text-xs text-slate-800">Data Siswa</h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Import/Export CSV</p>
+                <h4 class="font-bold text-xs text-slate-800">Ujian CBT</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Buat & kelola ujian</p>
             </a>
 
             <a href="{{ url('/app/nilai') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-orange-50 hover:border-orange-300 transition-colors group">
@@ -177,20 +166,15 @@
                     <svg class="w-4 h-4 text-teal-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
                 </div>
                 <h4 class="font-bold text-xs text-slate-800">Rekap Absensi</h4>
-                <p class="text-[10px] text-slate-400 mt-0.5">Laporan + Export CSV</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Laporan Presensi</p>
             </a>
 
-            <a href="{{ url('/app/kelola-komentar') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-pink-50 hover:border-pink-300 transition-colors group">
-                <div class="w-7 h-7 bg-pink-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-pink-500 transition-colors">
-                    <svg class="w-4 h-4 text-pink-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
+            <a href="{{ url('/app/rekap-jurnal') }}" class="flex flex-col p-3 border border-slate-200 rounded-xl hover:bg-emerald-50 hover:border-emerald-300 transition-colors group">
+                <div class="w-7 h-7 bg-emerald-100 rounded-lg flex items-center justify-center mb-2 group-hover:bg-emerald-500 transition-colors">
+                    <svg class="w-4 h-4 text-emerald-600 group-hover:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
                 </div>
-                <h4 class="font-bold text-xs text-slate-800">Komentar</h4>
-                <p class="text-[10px] text-slate-400 mt-0.5 inline-flex items-center gap-1">
-                    Kelola testimoni
-                    @if($totalKomentar > 0)
-                    <span class="bg-violet-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full">{{ $totalKomentar }}</span>
-                    @endif
-                </p>
+                <h4 class="font-bold text-xs text-slate-800">Jurnal Mengajar</h4>
+                <p class="text-[10px] text-slate-400 mt-0.5">Rekap agenda kelas</p>
             </a>
         </div>
     </div>

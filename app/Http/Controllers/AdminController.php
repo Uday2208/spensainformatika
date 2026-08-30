@@ -11,6 +11,7 @@ use App\Models\Nilai;
 use App\Models\Ujian;
 use App\Models\HasilUjian;
 use App\Models\Setting;
+use App\Models\Komentar;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -540,5 +541,23 @@ class AdminController extends Controller
         );
 
         return back()->with('success', 'Pengaturan komentar berhasil diperbarui!');
+    }
+
+    // ==========================================
+    // MODERASI KOMENTAR
+    // ==========================================
+    public function kelolaKomentar()
+    {
+        $komentars = Komentar::with(['siswa.user', 'siswa.kelas'])->latest()->paginate(50)->withQueryString();
+        $limitSetting = Setting::where('key', 'komentar_homepage_limit')->first();
+        $limit = $limitSetting ? $limitSetting->value : 50;
+
+        return view('admin.kelola-komentar', compact('komentars', 'limit'));
+    }
+
+    public function destroyKomentar($id)
+    {
+        Komentar::findOrFail($id)->delete();
+        return back()->with('success', 'Komentar siswa berhasil dihapus!');
     }
 }
