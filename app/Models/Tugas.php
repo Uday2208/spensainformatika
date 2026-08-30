@@ -37,9 +37,19 @@ class Tugas extends Model
         return $this->belongsTo(Kelas::class, 'kelas_id');
     }
 
+    public function kelases()
+    {
+        return $this->belongsToMany(Kelas::class, 'tugas_kelas', 'tugas_id', 'kelas_id');
+    }
+
     public function siswa()
     {
         return $this->belongsTo(Siswa::class, 'siswa_id');
+    }
+
+    public function siswas()
+    {
+        return $this->belongsToMany(Siswa::class, 'tugas_siswa', 'tugas_id', 'siswa_id');
     }
 
     public function getFileUrlAttribute()

@@ -1266,62 +1266,48 @@ class GuruController extends Controller
     }
 
     // ==========================================
-    // TUGAS SISWA (KBM)
+    // TUGAS KELAS (ROMBEL)
     // ==========================================
-    public function tugas(Request $request)
+    public function tugasKelas(Request $request)
     {
         $kelas = $this->getKelasGuru();
-        $kelasIds = $kelas->pluck('id');
-        
-        // Siswa di kelas yang diampu guru untuk opsi tugas individu
-        $siswas = Siswa::whereIn('kelas_id', $kelasIds)
-            ->with(['user', 'kelas'])
-            ->get()
-            ->sortBy(['kelas.nama_kelas', 'user.name']);
 
         $query = Tugas::where('guru_id', auth()->id())
-            ->with(['kelas', 'siswa.user']);
+            ->where('tipe_target', 'kelas')
+            ->with(['kelases', 'kelas']);
 
         if ($request->filled('kelas_id')) {
-            $query->where('kelas_id', $request->kelas_id);
-        }
-
-        if ($request->filled('tipe_target')) {
-            $query->where('tipe_target', $request->tipe_target);
+            $selectedKelas = $request->kelas_id;
+            $query->where(function($q) use ($selectedKelas) {
+                $q->whereHas('kelases', function($qk) use ($selectedKelas) {
+                    $qk->where('kelas.id', $selectedKelas);
+                })->orWhere('kelas_id', $selectedKelas);
+            });
         }
 
         $tugasList = $query->latest()->paginate(15)->withQueryString();
 
-        return view('guru.tugas', compact('tugasList', 'kelas', 'siswas'));
+        return view('guru.tugas-kelas', compact('tugasList', 'kelas'));
     }
 
-    public function storeTugas(Request $request)
+    public function storeTugasKelas(Request $request)
     {
         $request->validate([
             'judul' => 'required|string|max:255',
-            'tipe_target' => 'required|in:kelas,individu',
-            'kelas_id' => 'required_if:tipe_target,kelas|nullable|exists:kelas,id',
-            'siswa_id' => 'required_if:tipe_target,individu|nullable|exists:siswas,id',
+            'kelas_ids' => 'required|array|min:1',
+            'kelas_ids.*' => 'exists:kelas,id',
             'deadline' => 'nullable|date',
             'deskripsi' => 'nullable|string',
             'link' => 'nullable|url',
             'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:10240',
         ]);
 
-        $kelasId = $request->kelas_id;
-        // Jika target individu, ambil kelas_id dari siswa jika tidak dipilih
-        if ($request->tipe_target === 'individu' && $request->filled('siswa_id')) {
-            $siswa = Siswa::find($request->siswa_id);
-            $kelasId = $siswa ? $siswa->kelas_id : null;
-        }
-
         $data = [
             'guru_id' => auth()->id(),
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi,
-            'tipe_target' => $request->tipe_target,
-            'kelas_id' => $kelasId,
-            'siswa_id' => $request->tipe_target === 'individu' ? $request->siswa_id : null,
+            'tipe_target' => 'kelas',
+            'kelas_id' => $request->kelas_ids[0] ?? null,
             'deadline' => $request->deadline,
             'link' => $request->link,
         ];
@@ -1330,9 +1316,76 @@ class GuruController extends Controller
             $data['file_tugas'] = \App\Services\FileStorageService::upload($request->file('file_tugas'), 'tugas');
         }
 
-        Tugas::create($data);
+        $tugas = Tugas::create($data);
+        $tugas->kelases()->sync($request->kelas_ids);
 
-        return back()->with('success', 'Tugas berhasil dibuat dan dibagikan ke siswa!');
+        return back()->with('success', 'Tugas kelas berhasil diterbitkan untuk rombel yang dipilih!');
+    }
+
+    // ==========================================
+    // TUGAS INDIVIDU (SISWA)
+    // ==========================================
+    public function tugasIndividu(Request $request)
+    {
+        $kelas = $this->getKelasGuru();
+        $kelasIds = $kelas->pluck('id');
+
+        $siswas = Siswa::whereIn('kelas_id', $kelasIds)
+            ->with(['user', 'kelas'])
+            ->get()
+            ->sortBy(['kelas.nama_kelas', 'user.name']);
+
+        $query = Tugas::where('guru_id', auth()->id())
+            ->where('tipe_target', 'individu')
+            ->with(['siswas.user', 'siswas.kelas', 'siswa.user', 'siswa.kelas']);
+
+        if ($request->filled('kelas_id')) {
+            $selectedKelas = $request->kelas_id;
+            $query->where(function($q) use ($selectedKelas) {
+                $q->whereHas('siswas', function($qs) use ($selectedKelas) {
+                    $qs->where('kelas_id', $selectedKelas);
+                })->orWhere('kelas_id', $selectedKelas);
+            });
+        }
+
+        $tugasList = $query->latest()->paginate(15)->withQueryString();
+
+        return view('guru.tugas-individu', compact('tugasList', 'kelas', 'siswas'));
+    }
+
+    public function storeTugasIndividu(Request $request)
+    {
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'siswa_ids' => 'required|array|min:1',
+            'siswa_ids.*' => 'exists:siswas,id',
+            'deadline' => 'nullable|date',
+            'deskripsi' => 'nullable|string',
+            'link' => 'nullable|url',
+            'file_tugas' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,rar,jpg,jpeg,png|max:10240',
+        ]);
+
+        $firstSiswa = Siswa::find($request->siswa_ids[0]);
+
+        $data = [
+            'guru_id' => auth()->id(),
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'tipe_target' => 'individu',
+            'kelas_id' => $firstSiswa ? $firstSiswa->kelas_id : null,
+            'siswa_id' => $request->siswa_ids[0] ?? null,
+            'deadline' => $request->deadline,
+            'link' => $request->link,
+        ];
+
+        if ($request->hasFile('file_tugas')) {
+            $data['file_tugas'] = \App\Services\FileStorageService::upload($request->file('file_tugas'), 'tugas');
+        }
+
+        $tugas = Tugas::create($data);
+        $tugas->siswas()->sync($request->siswa_ids);
+
+        return back()->with('success', 'Tugas individu berhasil dibagikan ke siswa terpilih!');
     }
 
     public function destroyTugas($id)

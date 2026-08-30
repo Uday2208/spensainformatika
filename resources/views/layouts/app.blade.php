@@ -171,12 +171,28 @@
 
             <!-- Pembelajaran -->
             <div>
-                <p class="px-3 text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">Pembelajaran</p>
+                <p class="px-3 text-xs font-semibold text-blue-300 uppercase tracking-wider mb-2">Penugasan</p>
                 <div class="space-y-1">
-                    <a href="{{ url('/app/tugas') }}" class="flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/tugas*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
-                        <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
-                        Tugas Siswa
-                    </a>
+                    <!-- Dropdown Tugas -->
+                    <div x-data="{ openTugas: {{ request()->is('app/tugas*') ? 'true' : 'false' }} }" class="space-y-1">
+                        <button @click="openTugas = !openTugas" class="w-full flex items-center justify-between px-3 py-3 rounded-xl text-sm font-medium {{ request()->is('app/tugas*') ? 'bg-blue-950/50 text-white relative before:absolute before:left-0 before:top-2 before:bottom-2 before:w-1.5 before:bg-blue-400 before:rounded-r-full shadow-inner' : 'text-blue-100 hover:bg-white/10 hover:text-white' }} transition-all min-h-[44px]">
+                            <div class="flex items-center gap-3">
+                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+                                Tugas Siswa
+                            </div>
+                            <svg :class="openTugas ? 'rotate-180' : ''" class="w-4 h-4 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                        </button>
+                        
+                        <!-- Sub menu Tugas -->
+                        <div x-show="openTugas" x-collapse class="pl-11 pr-3 py-1 space-y-1">
+                            <a href="{{ url('/app/tugas/kelas') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/tugas/kelas*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
+                                Tugas Kelas
+                            </a>
+                            <a href="{{ url('/app/tugas/individu') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->is('app/tugas/individu*') ? 'text-white bg-white/10 font-semibold' : 'text-blue-200 hover:text-white hover:bg-white/5' }} transition-colors">
+                                Tugas Individu
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
 

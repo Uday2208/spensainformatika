@@ -76,8 +76,11 @@ Route::prefix('app')->middleware('auth')->group(function () {
         Route::get('/dashboard-guru', [GuruController::class, 'dashboard']);
 
         // ============ TUGAS SISWA (GURU) ============
-        Route::get('/tugas', [GuruController::class, 'tugas'])->name('guru.tugas.index');
-        Route::post('/tugas', [GuruController::class, 'storeTugas'])->name('guru.tugas.store');
+        Route::get('/tugas', function() { return redirect('/app/tugas/kelas'); });
+        Route::get('/tugas/kelas', [GuruController::class, 'tugasKelas'])->name('guru.tugas.kelas');
+        Route::post('/tugas/kelas', [GuruController::class, 'storeTugasKelas'])->name('guru.tugas.kelas.store');
+        Route::get('/tugas/individu', [GuruController::class, 'tugasIndividu'])->name('guru.tugas.individu');
+        Route::post('/tugas/individu', [GuruController::class, 'storeTugasIndividu'])->name('guru.tugas.individu.store');
         Route::delete('/tugas/{id}', [GuruController::class, 'destroyTugas'])->name('guru.tugas.destroy');
 
         Route::get('/absensi', [GuruController::class, 'absensi']);

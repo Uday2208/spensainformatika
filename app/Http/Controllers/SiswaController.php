@@ -89,14 +89,22 @@ class SiswaController extends Controller
             return redirect('/login');
         }
 
-        $query = Tugas::with(['guru', 'kelas'])
+        $query = Tugas::with(['guru', 'kelas', 'kelases', 'siswas'])
             ->where(function($q) use ($siswa) {
                 $q->where(function($qKelas) use ($siswa) {
                     $qKelas->where('tipe_target', 'kelas')
-                           ->where('kelas_id', $siswa->kelas_id);
+                           ->where(function($sub) use ($siswa) {
+                               $sub->whereHas('kelases', function($qk) use ($siswa) {
+                                   $qk->where('kelas.id', $siswa->kelas_id);
+                               })->orWhere('kelas_id', $siswa->kelas_id);
+                           });
                 })->orWhere(function($qIndividu) use ($siswa) {
                     $qIndividu->where('tipe_target', 'individu')
-                              ->where('siswa_id', $siswa->id);
+                              ->where(function($sub2) use ($siswa) {
+                                  $sub2->whereHas('siswas', function($qs) use ($siswa) {
+                                      $qs->where('siswas.id', $siswa->id);
+                                  })->orWhere('siswa_id', $siswa->id);
+                              });
                 });
             });
 
